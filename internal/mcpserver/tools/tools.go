@@ -65,6 +65,14 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.explain_query", Description: "EXPLAIN a query (optionally ANALYZE)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ExplainQueryInput) (*mcp.CallToolResult, ExplainQueryOutput, error) {
 		return explainQueryTool(ctx, deps, input)
 	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.shard_skew_report", Description: "report shard skew per node"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardSkewInput) (*mcp.CallToolResult, ShardSkewOutput, error) {
+		return shardSkewReportTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_plan", Description: "rebalance plan"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalancePlanInput) (*mcp.CallToolResult, RebalancePlanOutput, error) {
+		return rebalancePlanTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
