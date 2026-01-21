@@ -8,7 +8,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// MoveShardExecuteInput for citus.move_shard_execute.
+// MoveShardExecuteInput for citus_move_shard_execute.
 type MoveShardExecuteInput struct {
 	ApprovalToken string `json:"approval_token" jsonschema:"required"`
 	ShardID       int64  `json:"shard_id" jsonschema:"required"`
@@ -30,7 +30,7 @@ type MoveShardExecuteOutput struct {
 
 func moveShardExecuteTool(ctx context.Context, deps Dependencies, input MoveShardExecuteInput) (*mcp.CallToolResult, MoveShardExecuteOutput, error) {
 	// Execute tool guard
-	if err := deps.Guardrails.RequireToolAllowed("citus.move_shard_execute", true, input.ApprovalToken); err != nil {
+	if err := deps.Guardrails.RequireToolAllowed("citus_move_shard_execute", true, input.ApprovalToken); err != nil {
 		if me, ok := err.(*serr.CitusMCPError); ok {
 			return callError(me.Code, me.Message, me.Hint), MoveShardExecuteOutput{}, nil
 		}
@@ -52,5 +52,5 @@ func moveShardExecuteTool(ctx context.Context, deps Dependencies, input MoveShar
 	}
 
 	now := time.Now()
-	return nil, MoveShardExecuteOutput{Started: true, StartedAt: &now, Message: "Shard move started", Instructions: "Verify placement via citus.list_shards or citus.rebalance_status"}, nil
+	return nil, MoveShardExecuteOutput{Started: true, StartedAt: &now, Message: "Shard move started", Instructions: "Verify placement via list_shards or citus_rebalance_status"}, nil
 }

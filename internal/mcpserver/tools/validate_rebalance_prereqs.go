@@ -10,7 +10,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// ValidateRebalancePrereqsInput input for citus.validate_rebalance_prereqs.
+// ValidateRebalancePrereqsInput input for citus_validate_rebalance_prereqs.
 type ValidateRebalancePrereqsInput struct {
 	Table string `json:"table" jsonschema:"required"`
 }

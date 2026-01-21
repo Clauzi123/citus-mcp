@@ -54,51 +54,59 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 		return RebalanceTableExecute(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.cluster_summary", Description: "cluster summary"}, func(ctx context.Context, req *mcp.CallToolRequest, input ClusterSummaryInput) (*mcp.CallToolResult, ClusterSummaryOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_cluster_summary", Description: "cluster summary"}, func(ctx context.Context, req *mcp.CallToolRequest, input ClusterSummaryInput) (*mcp.CallToolResult, ClusterSummaryOutput, error) {
 		return clusterSummaryTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.list_distributed_tables", Description: "list distributed tables (paginated)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ListDistributedTablesV2Input) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_list_distributed_tables", Description: "list distributed tables (paginated)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ListDistributedTablesV2Input) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
+		if input.TableType == "" {
+			input.TableType = "distributed"
+		}
 		return listDistributedTablesV2(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.explain_query", Description: "EXPLAIN a query (optionally ANALYZE)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ExplainQueryInput) (*mcp.CallToolResult, ExplainQueryOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_list_reference_tables", Description: "list reference tables (paginated)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ListDistributedTablesV2Input) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
+		input.TableType = "reference"
+		return listDistributedTablesV2(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_explain_query", Description: "EXPLAIN a query (optionally ANALYZE)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ExplainQueryInput) (*mcp.CallToolResult, ExplainQueryOutput, error) {
 		return explainQueryTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.shard_skew_report", Description: "report shard skew per node"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardSkewInput) (*mcp.CallToolResult, ShardSkewOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_shard_skew_report", Description: "report shard skew per node"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardSkewInput) (*mcp.CallToolResult, ShardSkewOutput, error) {
 		return shardSkewReportTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_plan", Description: "rebalance plan"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalancePlanInput) (*mcp.CallToolResult, RebalancePlanOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_rebalance_plan", Description: "rebalance plan"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalancePlanInput) (*mcp.CallToolResult, RebalancePlanOutput, error) {
 		return rebalancePlanTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.validate_rebalance_prereqs", Description: "validate prerequisites for rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input ValidateRebalancePrereqsInput) (*mcp.CallToolResult, ValidateRebalancePrereqsOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_validate_rebalance_prereqs", Description: "validate prerequisites for rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input ValidateRebalancePrereqsInput) (*mcp.CallToolResult, ValidateRebalancePrereqsOutput, error) {
 		return validateRebalancePrereqsTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_execute", Description: "execute rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceExecuteInput) (*mcp.CallToolResult, RebalanceExecuteOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_rebalance_execute", Description: "execute rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceExecuteInput) (*mcp.CallToolResult, RebalanceExecuteOutput, error) {
 		return rebalanceExecuteTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_status", Description: "rebalance status"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceStatusInput) (*mcp.CallToolResult, RebalanceStatusOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_rebalance_status", Description: "rebalance status"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceStatusInput) (*mcp.CallToolResult, RebalanceStatusOutput, error) {
 		return rebalanceStatusTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.snapshot_source_advisor", Description: "advise source worker for snapshot-based node addition"}, func(ctx context.Context, req *mcp.CallToolRequest, input SnapshotSourceAdvisorInput) (*mcp.CallToolResult, SnapshotSourceAdvisorOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_snapshot_source_advisor", Description: "advise source worker for snapshot-based node addition"}, func(ctx context.Context, req *mcp.CallToolRequest, input SnapshotSourceAdvisorInput) (*mcp.CallToolResult, SnapshotSourceAdvisorOutput, error) {
 		return SnapshotSourceAdvisor(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.move_shard_plan", Description: "plan shard move"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardPlanInput) (*mcp.CallToolResult, MoveShardPlanOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_move_shard_plan", Description: "plan shard move"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardPlanInput) (*mcp.CallToolResult, MoveShardPlanOutput, error) {
 		return moveShardPlanTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.move_shard_execute", Description: "execute shard move (approval required)"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardExecuteInput) (*mcp.CallToolResult, MoveShardExecuteOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_move_shard_execute", Description: "execute shard move (approval required)"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardExecuteInput) (*mcp.CallToolResult, MoveShardExecuteOutput, error) {
 		return moveShardExecuteTool(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.request_approval_token", Description: "request approval token (admin only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input RequestApprovalTokenInput) (*mcp.CallToolResult, RequestApprovalTokenOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_request_approval_token", Description: "request approval token (admin only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input RequestApprovalTokenInput) (*mcp.CallToolResult, RequestApprovalTokenOutput, error) {
 		return requestApprovalTokenTool(ctx, deps, input)
 	})
 }

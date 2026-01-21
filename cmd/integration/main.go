@@ -76,21 +76,30 @@ func main() {
 		return tools.ListDistributedTables(ctx, deps, tools.ListDistributedTablesInput{})
 	})
 	run("list_shards", func() (*mcp.CallToolResult, any, error) { return tools.ListShards(ctx, deps, tools.ListShardsInput{}) })
-	run("citus.cluster_summary", func() (*mcp.CallToolResult, any, error) {
+	run("citus_cluster_summary", func() (*mcp.CallToolResult, any, error) {
 		return tools.ClusterSummary(ctx, deps, tools.ClusterSummaryInput{})
 	})
-	v2res, v2out, err := tools.ListDistributedTablesV2(ctx, deps, tools.ListDistributedTablesV2Input{})
+	v2res, v2out, err := tools.ListDistributedTablesV2(ctx, deps, tools.ListDistributedTablesV2Input{TableType: "distributed"})
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 	} else if v2res != nil && v2res.IsError {
-		fmt.Printf("citus.list_distributed_tables error: %s\n", toJSON(v2res.StructuredContent))
+		fmt.Printf("citus_list_distributed_tables error: %s\n", toJSON(v2res.StructuredContent))
 	} else {
-		fmt.Printf("citus.list_distributed_tables: %s\n", toJSON(v2out))
+		fmt.Printf("citus_list_distributed_tables: %s\n", toJSON(v2out))
 	}
 
 	var table string
 	if v2out.Tables != nil && len(v2out.Tables) > 0 {
-		table = fmt.Sprintf("%s.%s", v2out.Tables[0].Schema, v2out.Tables[0].Name)
+		// prefer distributed table
+		for _, t := range v2out.Tables {
+			if t.TableType == "distributed" {
+				table = fmt.Sprintf("%s.%s", t.Schema, t.Name)
+				break
+			}
+		}
+		if table == "" && len(v2out.Tables) > 0 {
+			table = fmt.Sprintf("%s.%s", v2out.Tables[0].Schema, v2out.Tables[0].Name)
+		}
 		fmt.Println("Selected table (v2):", table)
 	}
 
@@ -107,29 +116,33 @@ func main() {
 		}
 	}
 
-	run("citus.explain_query", func() (*mcp.CallToolResult, any, error) {
+	run("citus_explain_query", func() (*mcp.CallToolResult, any, error) {
 		return tools.ExplainQuery(ctx, deps, tools.ExplainQueryInput{SQL: "SELECT 1"})
 	})
 
 	if table != "" {
-		run("citus.shard_skew_report", func() (*mcp.CallToolResult, any, error) {
+		run("citus_shard_skew_report", func() (*mcp.CallToolResult, any, error) {
 			return tools.ShardSkewReport(ctx, deps, tools.ShardSkewInput{Table: table, Metric: "shard_count", IncludeTopShards: false})
 		})
-		run("citus.validate_rebalance_prereqs", func() (*mcp.CallToolResult, any, error) {
+		run("citus_validate_rebalance_prereqs", func() (*mcp.CallToolResult, any, error) {
 			return tools.ValidateRebalancePrereqs(ctx, deps, tools.ValidateRebalancePrereqsInput{Table: table})
 		})
 		run("rebalance_table_plan", func() (*mcp.CallToolResult, any, error) {
 			return tools.RebalanceTablePlan(ctx, deps, tools.RebalanceTableInput{Table: table})
 		})
-		run("citus.rebalance_plan", func() (*mcp.CallToolResult, any, error) {
+		run("citus_rebalance_plan", func() (*mcp.CallToolResult, any, error) {
 			return tools.RebalancePlan(ctx, deps, tools.RebalancePlanInput{Table: table})
 		})
 	} else {
 		fmt.Println("No distributed table found; skipping table-dependent tools")
 	}
 
-	run("citus.snapshot_source_advisor", func() (*mcp.CallToolResult, any, error) {
+	run("citus_snapshot_source_advisor", func() (*mcp.CallToolResult, any, error) {
 		return tools.SnapshotSourceAdvisor(ctx, deps, tools.SnapshotSourceAdvisorInput{Strategy: string(snapshotadvisor.StrategyHybrid)})
+	})
+
+	run("citus_list_reference_tables", func() (*mcp.CallToolResult, any, error) {
+		return tools.ListDistributedTablesV2(ctx, deps, tools.ListDistributedTablesV2Input{TableType: "reference"})
 	})
 
 	fmt.Println("Done at", time.Now().Format(time.RFC3339))

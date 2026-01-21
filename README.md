@@ -13,12 +13,14 @@ An MCP server for Citus (PostgreSQL extension), providing read-heavy tooling wit
 - `ping`, `server_info`
 - `list_nodes`, `list_distributed_tables`, `list_shards`
 - `rebalance_table_plan`, `rebalance_table_execute` (requires `allow_execute` + approval)
-- `citus.cluster_summary`, `citus.list_distributed_tables`
-- `citus.explain_query`, `citus.shard_skew_report`
-- `citus.rebalance_plan`, `citus.validate_rebalance_prereqs`, `citus.rebalance_execute`, `citus.rebalance_status`
-- `citus.snapshot_source_advisor`
-- `citus.move_shard_plan`, `citus.move_shard_execute` (approval)
-- `citus.request_approval_token`
+- `citus_cluster_summary`, `citus_list_distributed_tables`, `citus_list_reference_tables`
+- `citus_explain_query`, `citus_shard_skew_report`
+- `citus_rebalance_plan`, `citus_validate_rebalance_prereqs`, `citus_rebalance_execute`, `citus_rebalance_status`
+- `citus_snapshot_source_advisor`
+`citus_list_distributed_tables` accepts `schema`, `limit`, `cursor`, and `table_type` (`distributed`|`reference`|`all`), default `distributed`.
+
+- `citus_move_shard_plan`, `citus_move_shard_execute` (approval)
+- `citus_request_approval_token`
 
 ## Requirements
 - Go 1.22+

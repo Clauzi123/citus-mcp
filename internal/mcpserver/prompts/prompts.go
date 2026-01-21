@@ -22,7 +22,7 @@ func promptHealthCheck(deps tools.Dependencies) mcp.PromptHandler {
 		var summaryText string
 		var checklist strings.Builder
 		checklist.WriteString("### 🩺 Citus Health Check\n")
-		checklist.WriteString("- [ ] Run `citus.cluster_summary`\n")
+		checklist.WriteString("- [ ] Run `citus_cluster_summary`\n")
 		checklist.WriteString("- [ ] Verify workers active vs expected\n")
 		checklist.WriteString("- [ ] Review warnings\n")
 		checklist.WriteString("- [ ] Inspect distributed/reference table counts\n\n")
@@ -74,14 +74,14 @@ func promptRebalanceWorkflow(deps tools.Dependencies) mcp.PromptHandler {
 		b.WriteString("1) Validate prerequisites\n")
 		b.WriteString("```json\n{")
 		b.WriteString("\n  \"table\": \"public.my_table\"")
-		b.WriteString("\n}\n```\nRun: `citus.validate_rebalance_prereqs`\n\n")
+		b.WriteString("\n}\n```\nRun: `citus_validate_rebalance_prereqs`\n\n")
 		b.WriteString("2) Plan rebalance\n")
-		b.WriteString("```json\n{\n  \"table\": \"public.my_table\"\n}\n```\nRun: `citus.rebalance_plan`\n\n")
+		b.WriteString("```json\n{\n  \"table\": \"public.my_table\"\n}\n```\nRun: `citus_rebalance_plan`\n\n")
 		b.WriteString("3) Execute rebalance (approval required)\n")
-		b.WriteString("```json\n{\n  \"plan_id\": \"<from plan>\",\n  \"approval_token\": \"<token>\"\n}\n```\nRun: `citus.rebalance_execute`\n\n")
+		b.WriteString("```json\n{\n  \"plan_id\": \"<from plan>\",\n  \"approval_token\": \"<token>\"\n}\n```\nRun: `citus_rebalance_execute`\n\n")
 		b.WriteString("4) Monitor status\n")
-		b.WriteString("```json\n{\n  \"plan_id\": \"<from plan>\"\n}\n```\nRun: `citus.rebalance_status`\n\n")
-		b.WriteString("Notes:\n- Obtain approval token with `citus.request_approval_token` (admin mode).\n- Re-run status until complete; expect `Completed` or `InProgress`.\n")
+		b.WriteString("```json\n{\n  \"plan_id\": \"<from plan>\"\n}\n```\nRun: `citus_rebalance_status`\n\n")
+		b.WriteString("Notes:\n- Obtain approval token with `citus_request_approval_token` (admin mode).\n- Re-run status until complete; expect `Completed` or `InProgress`.\n")
 		messages := []*mcp.PromptMessage{
 			{Role: mcp.Role("system"), Content: &mcp.TextContent{Text: "You are a concise Citus operations assistant. Provide step-by-step guidance."}},
 			{Role: mcp.Role("assistant"), Content: &mcp.TextContent{Text: b.String()}},
@@ -109,13 +109,13 @@ func promptSkewInvestigation(deps tools.Dependencies) mcp.PromptHandler {
 		b.WriteString("### 📊 Citus Skew Investigation\n")
 		b.WriteString(fmt.Sprintf("**Target table**: %s\n\n", table))
 		b.WriteString("1) Run shard skew report\n")
-		b.WriteString(fmt.Sprintf("Run: `citus.shard_skew_report` with `{\"table\":\"%s\"}`\n", table))
+		b.WriteString(fmt.Sprintf("Run: `citus_shard_skew_report` with `{\"table\":\"%s\"}`\n", table))
 		b.WriteString(fmt.Sprintf("Resource: `citus://shards/skew?table=%s`\n\n", table))
 		b.WriteString("2) If skew detected, consider:\n")
-		b.WriteString("- `citus.rebalance_plan` (optionally with table)\n")
-		b.WriteString("- `citus.move_shard_plan` / `citus.move_shard_execute` for targeted moves\n")
-		b.WriteString("- `citus.rebalance_execute` (approval required)\n\n")
-		b.WriteString("3) Monitor:\n- `citus.rebalance_status` for ongoing rebalance\n- `citus.cluster_summary` to confirm worker balance\n")
+		b.WriteString("- `citus_rebalance_plan` (optionally with table)\n")
+		b.WriteString("- `citus_move_shard_plan` / `citus_move_shard_execute` for targeted moves\n")
+		b.WriteString("- `citus_rebalance_execute` (approval required)\n\n")
+		b.WriteString("3) Monitor:\n- `citus_rebalance_status` for ongoing rebalance\n- `citus_cluster_summary` to confirm worker balance\n")
 
 		messages := []*mcp.PromptMessage{
 			{Role: mcp.Role("system"), Content: &mcp.TextContent{Text: "You are a concise Citus operations assistant. Suggest next tools to run."}},

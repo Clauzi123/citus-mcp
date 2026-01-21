@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ClusterSummaryInput defines input for citus.cluster_summary.
+// ClusterSummaryInput defines input for citus_cluster_summary.
 type ClusterSummaryInput struct {
 	IncludeWorkers bool `json:"include_workers,omitempty"`
 	IncludeGUCs    bool `json:"include_gucs,omitempty"`

@@ -12,7 +12,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// MoveShardPlanInput input for citus.move_shard_plan.
+// MoveShardPlanInput input for citus_move_shard_plan.
 type MoveShardPlanInput struct {
 	ShardID    int64  `json:"shard_id" jsonschema:"required"`
 	SourceHost string `json:"source_host" jsonschema:"required"`

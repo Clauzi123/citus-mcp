@@ -45,8 +45,8 @@ func buildReasons(before ClusterMetricsBefore, ideal IdealTargetAfterAddition, c
 
 func defaultNextSteps() []NextStep {
 	return []NextStep{
-		{Tool: "citus.shard_skew_report", Args: map[string]any{"metric": "bytes", "include_top_shards": true}},
-		{Tool: "citus.rebalance_plan"},
+		{Tool: "citus_shard_skew_report", Args: map[string]any{"metric": "bytes", "include_top_shards": true}},
+		{Tool: "citus_rebalance_plan"},
 		{Tool: "citus.cluster_summary"},
 	}
 }

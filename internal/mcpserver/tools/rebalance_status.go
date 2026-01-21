@@ -9,7 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// RebalanceStatusInput for citus.rebalance_status.
+// RebalanceStatusInput for citus_rebalance_status.
 type RebalanceStatusInput struct {
 	Verbose bool   `json:"verbose,omitempty"`
 	Limit   int    `json:"limit,omitempty"`

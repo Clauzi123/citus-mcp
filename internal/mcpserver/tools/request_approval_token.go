@@ -10,7 +10,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// RequestApprovalTokenInput input for citus.request_approval_token.
+// RequestApprovalTokenInput input for citus_request_approval_token.
 type RequestApprovalTokenInput struct {
 	Action     string `json:"action" jsonschema:"required"`
 	TTLSeconds int    `json:"ttl_seconds,omitempty"`

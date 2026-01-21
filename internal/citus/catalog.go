@@ -12,10 +12,15 @@ type DistributedTable struct {
 	PartMethod   string `json:"part_method"`
 	ColocationID int32  `json:"colocation_id"`
 	Replication  string `json:"replication_model"`
+	ShardCount   int32  `json:"shard_count"`
 }
 
 func ListDistributedTables(ctx context.Context, pool *pgxpool.Pool) ([]DistributedTable, error) {
-	const q = `SELECT logicalrelid::text, partmethod::text, colocationid, 'na' AS replication_model FROM pg_dist_partition ORDER BY logicalrelid::text`
+	const q = `SELECT p.logicalrelid::text, p.partmethod::text, p.colocationid, COUNT(s.shardid)::int, 'na' AS replication_model
+		FROM pg_dist_partition p
+		LEFT JOIN pg_dist_shard s ON p.logicalrelid = s.logicalrelid
+		GROUP BY p.logicalrelid, p.partmethod, p.colocationid
+		ORDER BY p.logicalrelid::text`
 	rows, err := pool.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -24,7 +29,7 @@ func ListDistributedTables(ctx context.Context, pool *pgxpool.Pool) ([]Distribut
 	var tables []DistributedTable
 	for rows.Next() {
 		var t DistributedTable
-		if err := rows.Scan(&t.LogicalRelID, &t.PartMethod, &t.ColocationID, &t.Replication); err != nil {
+		if err := rows.Scan(&t.LogicalRelID, &t.PartMethod, &t.ColocationID, &t.ShardCount, &t.Replication); err != nil {
 			return nil, err
 		}
 		tables = append(tables, t)

@@ -11,7 +11,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// RebalancePlanInput for citus.rebalance_plan.
+// RebalancePlanInput for citus_rebalance_plan.
 type RebalancePlanInput struct {
 	Table             string   `json:"table,omitempty"`
 	Threshold         *float64 `json:"threshold,omitempty"`
