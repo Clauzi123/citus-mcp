@@ -92,14 +92,19 @@ func shardSkewReportTool(ctx context.Context, deps Dependencies, input ShardSkew
 		warnings = append(warnings, "no workers")
 	}
 
-	// detect bytes capability
+	// detect bytes capability via pg_catalog.citus_shards view first, fallback to citus_shard_sizes()
 	hasBytes := false
+	var useCitusShardsView bool
 	if metricBytes {
-		// detect citus_shard_sizes
+		// check view existence
 		var ok bool
-		err := deps.Pool.QueryRow(ctx, "SELECT to_regproc('citus_shard_sizes') IS NOT NULL").Scan(&ok)
-		if err == nil && ok {
+		if err := deps.Pool.QueryRow(ctx, "SELECT to_regclass('pg_catalog.citus_shards') IS NOT NULL").Scan(&ok); err == nil && ok {
 			hasBytes = true
+			useCitusShardsView = true
+		} else {
+			if err := deps.Pool.QueryRow(ctx, "SELECT to_regproc('citus_shard_sizes') IS NOT NULL").Scan(&ok); err == nil && ok {
+				hasBytes = true
+			}
 		}
 	}
 
@@ -114,7 +119,13 @@ func shardSkewReportTool(ctx context.Context, deps Dependencies, input ShardSkew
 
 	shardBytes := map[int64]int64{}
 	if hasBytes {
-		sz, err := fetchShardSizes(ctx, deps)
+		var sz map[int64]int64
+		var err error
+		if useCitusShardsView {
+			sz, err = fetchShardSizesFromView(ctx, deps, schema, table)
+		} else {
+			sz, err = fetchShardSizes(ctx, deps)
+		}
 		if err != nil {
 			warnings = append(warnings, "failed to fetch shard sizes; falling back to shard_count")
 		} else {
@@ -223,6 +234,25 @@ WHERE ($1 = '' OR (ns.nspname = $1::name AND c.relname = $2::name))
 func fetchShardSizes(ctx context.Context, deps Dependencies) (map[int64]int64, error) {
 	q := `SELECT shardid, shard_size FROM citus_shard_sizes()`
 	rows, err := deps.Pool.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	sizes := map[int64]int64{}
+	for rows.Next() {
+		var shardid int64
+		var size int64
+		if err := rows.Scan(&shardid, &size); err != nil {
+			return nil, err
+		}
+		sizes[shardid] = size
+	}
+	return sizes, rows.Err()
+}
+
+func fetchShardSizesFromView(ctx context.Context, deps Dependencies, schema, table string) (map[int64]int64, error) {
+	q := `SELECT shardid, shard_size FROM pg_catalog.citus_shards WHERE ($1='' OR table_name = $1||'.'||$2)`
+	rows, err := deps.Pool.Query(ctx, q, schema, table)
 	if err != nil {
 		return nil, err
 	}
