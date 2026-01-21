@@ -77,6 +77,10 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.validate_rebalance_prereqs", Description: "validate prerequisites for rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input ValidateRebalancePrereqsInput) (*mcp.CallToolResult, ValidateRebalancePrereqsOutput, error) {
 		return validateRebalancePrereqsTool(ctx, deps, input)
 	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_execute", Description: "execute rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceExecuteInput) (*mcp.CallToolResult, RebalanceExecuteOutput, error) {
+		return rebalanceExecuteTool(ctx, deps, input)
+	})
 }
 
 // Ping tool

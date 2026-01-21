@@ -35,6 +35,39 @@ func ExecuteRebalanceTable(ctx context.Context, pool *pgxpool.Pool, table string
 	return nil
 }
 
+// StartRebalance uses citus_rebalance_start (if available) to start a cluster/table rebalance.
+func StartRebalance(ctx context.Context, pool *pgxpool.Pool, table *string, threshold *float64, maxMoves *int, excludedShards []int64, drainOnly *bool) error {
+	var args [5]any
+	if table != nil && *table != "" {
+		args[0] = *table
+	}
+	if threshold != nil {
+		args[1] = *threshold
+	}
+	if maxMoves != nil {
+		args[2] = *maxMoves
+	}
+	if len(excludedShards) > 0 {
+		args[3] = excludedShards
+	}
+	if drainOnly != nil {
+		args[4] = *drainOnly
+	}
+	const q = `SELECT citus_rebalance_start($1,$2,$3,$4,$5)`
+	_, err := pool.Exec(ctx, q, args[0], args[1], args[2], args[3], args[4])
+	return err
+}
+
+// IsRebalanceRunning best-effort checks if a rebalance is running.
+func IsRebalanceRunning(ctx context.Context, pool *pgxpool.Pool) (bool, error) {
+	rows, err := pool.Query(ctx, "SELECT * FROM citus_rebalance_status()")
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	return rows.Next(), nil
+}
+
 // GetRebalancePlan calls get_rebalance_table_shards_plan when available.
 func GetRebalancePlan(ctx context.Context, pool *pgxpool.Pool, table *string, threshold *float64, maxMoves *int, excludedShards []int64, drainOnly *bool) ([]RebalanceMove, error) {
 	var args [5]any
