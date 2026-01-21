@@ -141,6 +141,21 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus_colocation_inspector", Description: "Inspect colocation groups and colocated tables"}, func(ctx context.Context, req *mcp.CallToolRequest, input ColocationInspectorInput) (*mcp.CallToolResult, ColocationInspectorOutput, error) {
 		return colocationInspectorTool(ctx, deps, input)
 	})
+
+	// Advanced Advisors: Metadata Health, Node Preparation
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "citus_metadata_health",
+		Description: "Detect metadata corruption and inconsistencies. Checks orphaned shards, invalid placements, colocation mismatches, and cross-node drift.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input MetadataHealthInput) (*mcp.CallToolResult, MetadataHealthOutput, error) {
+		return metadataHealthTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "citus_node_prepare_advisor",
+		Description: "Pre-flight checks before adding a worker node. Validates extensions, versions, schemas, types, functions, and roles.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input NodePrepareInput) (*mcp.CallToolResult, NodePrepareOutput, error) {
+		return nodePrepareAdvisorTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
