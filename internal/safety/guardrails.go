@@ -24,13 +24,13 @@ func NewGuardrails(cfg config.Config) *Guardrails {
 
 func (g *Guardrails) RequireExecuteAllowed(token string, action string) error {
 	if !g.allowExecute {
-		return serr.New(serr.CodeForbidden, "execute mode disabled", "set allow_execute=true to enable", nil)
+		return serr.NewExecuteDisabled()
 	}
 	if token == "" {
-		return serr.New(serr.CodeUnauthorized, "approval token required", "provide short-lived approval token", map[string]any{"action": action})
+		return serr.NewApprovalRequired(action)
 	}
 	if err := ValidateApprovalToken(g.approvalSecret, action, token); err != nil {
-		return serr.New(serr.CodeUnauthorized, "invalid approval token", err.Error(), map[string]any{"action": action})
+		return serr.New(serr.CodeApprovalRequired, "invalid approval token", err.Error(), map[string]any{"action": action})
 	}
 	return nil
 }

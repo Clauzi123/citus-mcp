@@ -109,7 +109,7 @@ func ListNodes(ctx context.Context, deps Dependencies, input ListNodesInput) (*m
 	limit, offset := normalizeLimitOffset(deps.Config, input.Limit, input.Offset)
 	nodes, err := db.ListNodes(ctx, deps.Pool)
 	if err != nil {
-		return callError(serr.CodeUnavailable, err.Error(), "db error"), ListNodesOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListNodesOutput{}, nil
 	}
 	end := offset + limit
 	if end > len(nodes) {
@@ -145,7 +145,7 @@ func ListShards(ctx context.Context, deps Dependencies, input ListShardsInput) (
 	limit, offset := normalizeLimitOffset(deps.Config, input.Limit, input.Offset)
 	shards, err := citus.ListShards(ctx, deps.Pool)
 	if err != nil {
-		return callError(serr.CodeUnavailable, err.Error(), "db error"), ListShardsOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListShardsOutput{}, nil
 	}
 	end := offset + limit
 	if end > len(shards) {
@@ -161,7 +161,7 @@ func ListDistributedTables(ctx context.Context, deps Dependencies, input ListDis
 	limit, offset := normalizeLimitOffset(deps.Config, input.Limit, input.Offset)
 	tables, err := citus.ListDistributedTables(ctx, deps.Pool)
 	if err != nil {
-		return callError(serr.CodeUnavailable, err.Error(), "db error"), ListDistributedTablesOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesOutput{}, nil
 	}
 	end := offset + limit
 	if end > len(tables) {
@@ -187,7 +187,7 @@ func RebalanceTablePlan(ctx context.Context, deps Dependencies, input RebalanceT
 	}
 	plan, err := citus.PlanRebalanceTable(ctx, deps.Pool, input.Table)
 	if err != nil {
-		return callError(serr.CodeUnavailable, err.Error(), "citus error"), RebalanceTablePlanOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "citus error"), RebalanceTablePlanOutput{}, nil
 	}
 	return nil, RebalanceTablePlanOutput{Plan: plan}, nil
 }
@@ -205,19 +205,19 @@ func RebalanceTableExecute(ctx context.Context, deps Dependencies, input Rebalan
 		return callError(serr.CodeInvalidInput, "table required", "provide table name"), RebalanceTableExecuteOutput{}, nil
 	}
 	if err := deps.Guardrails.RequireExecuteAllowed(input.ApprovalToken, "rebalance_table:"+input.Table); err != nil {
-		if me, ok := err.(*serr.MCPError); ok {
+		if me, ok := err.(*serr.CitusMCPError); ok {
 			return callError(me.Code, me.Message, me.Hint), RebalanceTableExecuteOutput{}, nil
 		}
-		return callError(serr.CodeUnauthorized, err.Error(), "approval required"), RebalanceTableExecuteOutput{}, nil
+		return callError(serr.CodeApprovalRequired, err.Error(), "approval required"), RebalanceTableExecuteOutput{}, nil
 	}
 	if err := citus.ExecuteRebalanceTable(ctx, deps.Pool, input.Table); err != nil {
-		return callError(serr.CodeUnavailable, err.Error(), "citus error"), RebalanceTableExecuteOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "citus error"), RebalanceTableExecuteOutput{}, nil
 	}
 	return nil, RebalanceTableExecuteOutput{Status: "ok"}, nil
 }
 
 // Helper error creation
-func callError(code serr.Code, msg, hint string) *mcp.CallToolResult {
+func callError(code serr.ErrorCode, msg, hint string) *mcp.CallToolResult {
 	errObj := map[string]any{"code": code, "message": msg}
 	if hint != "" {
 		errObj["hint"] = hint
