@@ -18,6 +18,14 @@ const (
 	ModeAdmin    Mode = "admin"
 )
 
+type TransportType string
+
+const (
+	TransportStdio      TransportType = "stdio"
+	TransportSSE        TransportType = "sse"
+	TransportStreamable TransportType = "streamable"
+)
+
 type Config struct {
 	CoordinatorDSN              string   `mapstructure:"coordinator_dsn"`
 	CoordinatorUser             string   `mapstructure:"coordinator_user"`
@@ -35,6 +43,13 @@ type Config struct {
 	CacheTTLSeconds             int      `mapstructure:"cache_ttl_seconds"`
 	LogLevel                    string   `mapstructure:"log_level"`
 	SnapshotAdvisorCollectBytes bool     `mapstructure:"snapshot_advisor_collect_bytes"`
+
+	// Transport configuration
+	Transport     TransportType `mapstructure:"transport"`
+	HTTPAddr      string        `mapstructure:"http_addr"`
+	HTTPPort      int           `mapstructure:"http_port"`
+	HTTPPath      string        `mapstructure:"http_path"`
+	SSEKeepAlive  int           `mapstructure:"sse_keepalive_seconds"`
 }
 
 func defaults(v *viper.Viper) {
@@ -54,6 +69,13 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("cache_ttl_seconds", 5)
 	v.SetDefault("log_level", "info")
 	v.SetDefault("snapshot_advisor_collect_bytes", true)
+
+	// Transport defaults
+	v.SetDefault("transport", string(TransportStdio))
+	v.SetDefault("http_addr", "127.0.0.1")
+	v.SetDefault("http_port", 8080)
+	v.SetDefault("http_path", "/mcp")
+	v.SetDefault("sse_keepalive_seconds", 30)
 }
 
 func Load() (Config, error) {
@@ -67,23 +89,30 @@ func Load() (Config, error) {
 	fs := pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
 	var cfgPathFlag string
 	fs.StringVarP(&cfgPathFlag, "config", "c", "", "Config file path (yaml|json|toml)")
-	fs.String("coordinator-dsn", "", "Coordinator DSN (postgres://…)")
-	fs.String("dsn", "", "Coordinator DSN (alias for coordinator-dsn)")
-	fs.String("coordinator-user", "", "Coordinator user (optional override)")
-	fs.String("coordinator-password", "", "Coordinator password (optional override)")
-	fs.StringSlice("worker-dsn", []string{}, "Worker DSNs (repeatable)")
-	fs.Int("connect-timeout-seconds", 5, "Connection timeout in seconds")
-	fs.Int("statement-timeout-ms", 30000, "Statement timeout in milliseconds")
-	fs.String("app-name", "citus-mcp", "Application name")
+	fs.String("coordinator_dsn", "", "Coordinator DSN (postgres://…)")
+	fs.String("dsn", "", "Coordinator DSN (alias for coordinator_dsn)")
+	fs.String("coordinator_user", "", "Coordinator user (optional override)")
+	fs.String("coordinator_password", "", "Coordinator password (optional override)")
+	fs.StringSlice("worker_dsns", []string{}, "Worker DSNs (repeatable)")
+	fs.Int("connect_timeout_seconds", 5, "Connection timeout in seconds")
+	fs.Int("statement_timeout_ms", 30000, "Statement timeout in milliseconds")
+	fs.String("app_name", "citus-mcp", "Application name")
 	fs.String("mode", string(ModeReadOnly), "Mode: read_only|admin")
-	fs.Bool("allow-execute", false, "Allow execute tools")
-	fs.String("approval-secret", "", "Approval secret (required if allow-execute)")
-	fs.Int("max-rows", 200, "Maximum rows returned by tools")
-	fs.Int("max-text-bytes", 200000, "Maximum text bytes returned by tools")
-	fs.Bool("enable-caching", true, "Enable caching")
-	fs.Int("cache-ttl-seconds", 5, "Cache TTL in seconds")
-	fs.String("log-level", "info", "Log level")
-	fs.Bool("snapshot-advisor-collect-bytes", true, "Collect bytes for snapshot advisor (may be heavy)")
+	fs.Bool("allow_execute", false, "Allow execute tools")
+	fs.String("approval_secret", "", "Approval secret (required if allow_execute)")
+	fs.Int("max_rows", 200, "Maximum rows returned by tools")
+	fs.Int("max_text_bytes", 200000, "Maximum text bytes returned by tools")
+	fs.Bool("enable_caching", true, "Enable caching")
+	fs.Int("cache_ttl_seconds", 5, "Cache TTL in seconds")
+	fs.String("log_level", "info", "Log level")
+	fs.Bool("snapshot_advisor_collect_bytes", true, "Collect bytes for snapshot advisor (may be heavy)")
+
+	// Transport flags
+	fs.String("transport", string(TransportStdio), "Transport type: stdio|sse|streamable")
+	fs.String("http_addr", "127.0.0.1", "HTTP listen address (for sse/streamable)")
+	fs.Int("http_port", 8080, "HTTP listen port (for sse/streamable)")
+	fs.String("http_path", "/mcp", "HTTP endpoint path (for sse/streamable)")
+	fs.Int("sse_keepalive_seconds", 30, "SSE keepalive interval in seconds")
 
 	// pflag -> std flag compatibility
 	_ = fs.Parse(os.Args[1:])
@@ -144,6 +173,18 @@ func validate(cfg Config) error {
 	}
 	if cfg.MaxTextBytes <= 0 {
 		return errors.New("config: max_text_bytes must be > 0")
+	}
+	// Validate transport
+	switch cfg.Transport {
+	case TransportStdio, TransportSSE, TransportStreamable:
+		// valid
+	default:
+		return fmt.Errorf("config: transport must be one of [stdio, sse, streamable]")
+	}
+	if cfg.Transport != TransportStdio {
+		if cfg.HTTPPort <= 0 || cfg.HTTPPort > 65535 {
+			return errors.New("config: http_port must be between 1 and 65535")
+		}
 	}
 	return nil
 }

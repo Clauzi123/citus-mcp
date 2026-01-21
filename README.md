@@ -259,19 +259,35 @@ statement_timeout_ms: 30000   # Query timeout (30 seconds)
 # Logging
 # -------
 log_level: info               # debug, info, warn, error
+
+# Transport (NEW)
+# ---------------
+# stdio: Standard input/output (default, for VS Code/CLI integration)
+# sse: Server-Sent Events over HTTP (for remote/network access)
+# streamable: Streamable HTTP transport (for remote/network access)
+transport: stdio
+
+# HTTP Settings (only used when transport is sse or streamable)
+# http_addr: 127.0.0.1        # Listen address (use 0.0.0.0 for all interfaces)
+# http_port: 8080             # Listen port
+# http_path: /mcp             # Endpoint path
+# sse_keepalive_seconds: 30   # SSE keepalive interval
 ```
 
 #### Method 3: Command-Line Flags
 
 ```bash
-# Using flags
-bin/citus-mcp --coordinator-dsn "postgres://..." --mode read_only
+# Using flags (note: use underscores in flag names)
+bin/citus-mcp --coordinator_dsn "postgres://..." --mode read_only
 
 # Using positional argument for DSN
 bin/citus-mcp "postgres://user:pass@localhost:5432/mydb?sslmode=disable"
 
 # Specify config file
 bin/citus-mcp --config /path/to/config.yaml
+
+# Start with SSE transport
+bin/citus-mcp --transport sse --http_port 8080 --coordinator_dsn "postgres://..."
 ```
 
 ### Configuration File Locations
@@ -285,6 +301,117 @@ The server searches for configuration files in this order:
 5. `./citus-mcp.yaml` (current directory)
 
 Supported formats: YAML, JSON, TOML
+
+---
+
+## Transport Options
+
+Citus MCP supports three transport modes for different deployment scenarios:
+
+### 1. Stdio Transport (Default)
+
+Standard input/output transport - the server communicates via stdin/stdout. This is the default and is used for direct integration with VS Code and GitHub Copilot CLI.
+
+```bash
+# Default - stdio transport
+bin/citus-mcp --coordinator-dsn "postgres://..."
+
+# Explicit
+bin/citus-mcp --transport stdio --coordinator-dsn "postgres://..."
+```
+
+**Use cases:**
+- VS Code Copilot Chat integration
+- GitHub Copilot CLI
+- Local development
+
+### 2. SSE Transport (Server-Sent Events)
+
+HTTP-based transport using Server-Sent Events. The server runs as an HTTP daemon that clients can connect to remotely.
+
+```bash
+# Start server on HTTP with SSE
+bin/citus-mcp --transport sse --http-addr 0.0.0.0 --http-port 8080 --coordinator-dsn "postgres://..."
+
+# Or via environment variables
+export CITUS_MCP_TRANSPORT=sse
+export CITUS_MCP_HTTP_ADDR=0.0.0.0
+export CITUS_MCP_HTTP_PORT=8080
+export CITUS_MCP_COORDINATOR_DSN="postgres://..."
+bin/citus-mcp
+```
+
+**Endpoints:**
+- `GET /mcp` - Establish SSE connection
+- `POST /mcp/session/{id}` - Send messages to session
+- `GET /health` - Health check
+
+**Use cases:**
+- Remote MCP server deployment
+- Docker/Kubernetes deployments
+- Shared server for multiple clients
+- Network-accessible MCP services
+
+### 3. Streamable HTTP Transport
+
+Modern HTTP transport with streaming support. Recommended for new deployments.
+
+```bash
+# Start server with streamable HTTP transport
+bin/citus-mcp --transport streamable --http-addr 0.0.0.0 --http-port 8080 --coordinator-dsn "postgres://..."
+```
+
+**Endpoints:**
+- `POST /mcp` - Handle MCP requests with streaming responses
+- `GET /health` - Health check
+
+**Use cases:**
+- Same as SSE, with better streaming support
+- Environments where SSE is not ideal
+
+### Docker Deployment Example
+
+```dockerfile
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go build -o citus-mcp ./cmd/citus-mcp
+
+FROM alpine:latest
+COPY --from=builder /app/citus-mcp /usr/local/bin/
+EXPOSE 8080
+CMD ["citus-mcp", "--transport", "sse", "--http-addr", "0.0.0.0", "--http-port", "8080"]
+```
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  citus-mcp:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      CITUS_MCP_TRANSPORT: sse
+      CITUS_MCP_HTTP_ADDR: 0.0.0.0
+      CITUS_MCP_HTTP_PORT: 8080
+      CITUS_MCP_COORDINATOR_DSN: postgres://user:pass@citus-coordinator:5432/mydb?sslmode=disable
+```
+
+### Connecting to Remote Server
+
+For SSE/Streamable transports, configure your MCP client to connect via HTTP:
+
+```json
+{
+  "mcpServers": {
+    "citus-mcp": {
+      "type": "sse",
+      "url": "http://citus-mcp-server:8080/mcp"
+    }
+  }
+}
+```
 
 ---
 
