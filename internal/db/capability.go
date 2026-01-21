@@ -9,22 +9,24 @@ import (
 
 // Capabilities represent optional functions/UDFs/features available in Citus.
 type Capabilities struct {
-	HasCitusExtension       bool   `json:"has_citus_extension"`
-	CitusVersion            string `json:"citus_version,omitempty"`
-	HasRebalanceStart       bool   `json:"has_rebalance_start"`
-	HasRebalanceStatus      bool   `json:"has_rebalance_status"`
-	HasRebalancePlan        bool   `json:"has_rebalance_plan"`
-	HasRebalanceProgress    bool   `json:"has_rebalance_progress"`
-	HasMoveShardPlacement   bool   `json:"has_move_shard_placement"`
-	HasGetActiveWorkerNodes bool   `json:"has_get_active_worker_nodes"`
+	HasCitusExtension           bool   `json:"has_citus_extension"`
+	CitusVersion                string `json:"citus_version,omitempty"`
+	HasRebalanceStart           bool   `json:"has_rebalance_start"`
+	HasRebalanceStatus          bool   `json:"has_rebalance_status"`
+	HasRebalancePlan            bool   `json:"has_rebalance_plan"`
+	HasRebalanceProgress        bool   `json:"has_rebalance_progress"`
+	HasMoveShardPlacement       bool   `json:"has_move_shard_placement"`
+	HasMasterMoveShardPlacement bool   `json:"has_master_move_shard_placement"`
+	HasGetActiveWorkerNodes     bool   `json:"has_get_active_worker_nodes"`
 }
 
-func (c *Capabilities) SupportsRebalancePlan() bool        { return c.HasRebalancePlan }
-func (c *Capabilities) SupportsRebalanceStart() bool       { return c.HasRebalanceStart }
-func (c *Capabilities) SupportsRebalanceStatus() bool      { return c.HasRebalanceStatus }
-func (c *Capabilities) SupportsRebalanceProgress() bool    { return c.HasRebalanceProgress }
-func (c *Capabilities) SupportsShardMove() bool            { return c.HasMoveShardPlacement }
-func (c *Capabilities) SupportsGetActiveWorkerNodes() bool { return c.HasGetActiveWorkerNodes }
+func (c *Capabilities) SupportsRebalancePlan() bool            { return c.HasRebalancePlan }
+func (c *Capabilities) SupportsRebalanceStart() bool           { return c.HasRebalanceStart }
+func (c *Capabilities) SupportsRebalanceStatus() bool          { return c.HasRebalanceStatus }
+func (c *Capabilities) SupportsRebalanceProgress() bool        { return c.HasRebalanceProgress }
+func (c *Capabilities) SupportsShardMove() bool                { return c.HasMoveShardPlacement }
+func (c *Capabilities) SupportsMasterMoveShardPlacement() bool { return c.HasMasterMoveShardPlacement }
+func (c *Capabilities) SupportsGetActiveWorkerNodes() bool     { return c.HasGetActiveWorkerNodes }
 
 // DetectCapabilities probes pg_extension and pg_proc for Citus UDFs.
 func DetectCapabilities(ctx context.Context, pool *pgxpool.Pool) (*Capabilities, error) {
@@ -55,6 +57,9 @@ func DetectCapabilities(ctx context.Context, pool *pgxpool.Pool) (*Capabilities,
 		return nil, err
 	}
 	if c.HasMoveShardPlacement, err = check("citus_move_shard_placement"); err != nil {
+		return nil, err
+	}
+	if c.HasMasterMoveShardPlacement, err = check("master_move_shard_placement"); err != nil {
 		return nil, err
 	}
 	if c.HasRebalanceProgress, err = check("get_rebalance_progress"); err != nil {

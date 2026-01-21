@@ -81,6 +81,18 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_execute", Description: "execute rebalance"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceExecuteInput) (*mcp.CallToolResult, RebalanceExecuteOutput, error) {
 		return rebalanceExecuteTool(ctx, deps, input)
 	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.rebalance_status", Description: "rebalance status"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceStatusInput) (*mcp.CallToolResult, RebalanceStatusOutput, error) {
+		return rebalanceStatusTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.move_shard_plan", Description: "plan shard move"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardPlanInput) (*mcp.CallToolResult, MoveShardPlanOutput, error) {
+		return moveShardPlanTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.move_shard_execute", Description: "execute shard move (approval required)"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardExecuteInput) (*mcp.CallToolResult, MoveShardExecuteOutput, error) {
+		return moveShardExecuteTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
