@@ -86,6 +86,10 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 		return rebalanceStatusTool(ctx, deps, input)
 	})
 
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.snapshot_source_advisor", Description: "advise source worker for snapshot-based node addition"}, func(ctx context.Context, req *mcp.CallToolRequest, input SnapshotSourceAdvisorInput) (*mcp.CallToolResult, SnapshotSourceAdvisorOutput, error) {
+		return SnapshotSourceAdvisor(ctx, deps, input)
+	})
+
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.move_shard_plan", Description: "plan shard move"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardPlanInput) (*mcp.CallToolResult, MoveShardPlanOutput, error) {
 		return moveShardPlanTool(ctx, deps, input)
 	})
@@ -138,8 +142,8 @@ func ServerInfo(ctx context.Context, deps Dependencies) (*mcp.CallToolResult, Se
 
 // ListNodes tool
 type ListNodesInput struct {
-	Limit  int `json:"limit,omitempty" jsonschema:"min=1"`
-	Offset int `json:"offset,omitempty" jsonschema:"min=0"`
+	Limit  int `json:"limit,omitempty"`
+	Offset int `json:"offset,omitempty"`
 }
 type ListNodesOutput struct {
 	Nodes []db.Node `json:"nodes"`

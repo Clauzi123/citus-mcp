@@ -49,6 +49,8 @@ func StartRebalance(ctx context.Context, pool *pgxpool.Pool, table *string, thre
 	}
 	if len(excludedShards) > 0 {
 		args[3] = excludedShards
+	} else {
+		args[3] = []int64{}
 	}
 	if drainOnly != nil {
 		args[4] = *drainOnly

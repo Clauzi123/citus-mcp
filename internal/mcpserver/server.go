@@ -7,6 +7,7 @@ import (
 	"citus-mcp/internal/cache"
 	"citus-mcp/internal/config"
 	"citus-mcp/internal/db"
+	"citus-mcp/internal/mcpserver/prompts"
 	"citus-mcp/internal/mcpserver/resources"
 	"citus-mcp/internal/mcpserver/tools"
 	"citus-mcp/internal/safety"
@@ -61,6 +62,7 @@ func New(cfg config.Config, logger *zap.Logger) (*Server, error) {
 	}
 	tools.RegisterAll(m, deps)
 	resources.RegisterAll(m, deps)
+	prompts.RegisterAll(m, deps)
 
 	return &Server{cfg: cfg, logger: logger, pool: pool, guardrails: guard, deps: deps, srv: m}, nil
 }

@@ -50,7 +50,12 @@ func rebalancePlanTool(ctx context.Context, deps Dependencies, input RebalancePl
 		tablePtr = &table
 	}
 
-	moves, err := citus.GetRebalancePlan(ctx, deps.Pool, tablePtr, input.Threshold, input.MaxShardMoves, input.ExcludedShardList, input.DrainOnly)
+	maxMoves := input.MaxShardMoves
+	if maxMoves == nil {
+		defaultMax := 100
+		maxMoves = &defaultMax
+	}
+	moves, err := citus.GetRebalancePlan(ctx, deps.Pool, tablePtr, input.Threshold, maxMoves, input.ExcludedShardList, input.DrainOnly)
 	if err != nil {
 		return callError(serr.CodeInternalError, err.Error(), "citus plan error"), RebalancePlanOutput{}, nil
 	}
@@ -80,6 +85,11 @@ func rebalancePlanTool(ctx context.Context, deps Dependencies, input RebalancePl
 		out.Warnings = warnings
 	}
 	return nil, out, nil
+}
+
+// RebalancePlan exported for integration/tests.
+func RebalancePlan(ctx context.Context, deps Dependencies, input RebalancePlanInput) (*mcp.CallToolResult, RebalancePlanOutput, error) {
+	return rebalancePlanTool(ctx, deps, input)
 }
 
 func hashMoves(moves []citus.RebalanceMove) string {

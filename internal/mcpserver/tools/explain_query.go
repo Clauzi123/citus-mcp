@@ -71,6 +71,11 @@ func explainQueryTool(ctx context.Context, deps Dependencies, input ExplainQuery
 	return nil, ExplainQueryOutput{ExplainText: strings.Join(lines, "\n"), Notes: notes}, nil
 }
 
+// ExplainQuery is exported for integration/tests.
+func ExplainQuery(ctx context.Context, deps Dependencies, input ExplainQueryInput) (*mcp.CallToolResult, ExplainQueryOutput, error) {
+	return explainQueryTool(ctx, deps, input)
+}
+
 func buildExplainQuery(input ExplainQueryInput) string {
 	opts := []string{"FORMAT TEXT"}
 	if input.Analyze {

@@ -18,6 +18,7 @@ type Capabilities struct {
 	HasMoveShardPlacement       bool   `json:"has_move_shard_placement"`
 	HasMasterMoveShardPlacement bool   `json:"has_master_move_shard_placement"`
 	HasGetActiveWorkerNodes     bool   `json:"has_get_active_worker_nodes"`
+	HasShardSizes               bool   `json:"has_shard_sizes"`
 }
 
 func (c *Capabilities) SupportsRebalancePlan() bool            { return c.HasRebalancePlan }
@@ -27,6 +28,7 @@ func (c *Capabilities) SupportsRebalanceProgress() bool        { return c.HasReb
 func (c *Capabilities) SupportsShardMove() bool                { return c.HasMoveShardPlacement }
 func (c *Capabilities) SupportsMasterMoveShardPlacement() bool { return c.HasMasterMoveShardPlacement }
 func (c *Capabilities) SupportsGetActiveWorkerNodes() bool     { return c.HasGetActiveWorkerNodes }
+func (c *Capabilities) SupportsShardSizes() bool               { return c.HasShardSizes }
 
 // DetectCapabilities probes pg_extension and pg_proc for Citus UDFs.
 func DetectCapabilities(ctx context.Context, pool *pgxpool.Pool) (*Capabilities, error) {
@@ -66,6 +68,9 @@ func DetectCapabilities(ctx context.Context, pool *pgxpool.Pool) (*Capabilities,
 		return nil, err
 	}
 	if c.HasGetActiveWorkerNodes, err = check("citus_get_active_worker_nodes"); err != nil {
+		return nil, err
+	}
+	if c.HasShardSizes, err = check("citus_shard_sizes"); err != nil {
 		return nil, err
 	}
 	return c, nil

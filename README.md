@@ -19,36 +19,15 @@ An MCP server for Citus (PostgreSQL extension), providing read-heavy tooling wit
 - `rebalance_table_execute` (requires `allow_execute=true` and approval token)
 
 ## Requirements
-- Go 1.22+
-- PostgreSQL with Citus extension
-
-## Quickstart
-```bash
-make build
-# or
+- `citus.snapshot_source_advisor` (recommend source worker for snapshot-based node addition)
 make test
 ```
 
 Run server over stdio (MCP):
 ```bash
-citus-mcp
-```
-
-## Configuration
-Load order: `CITUS_MCP_CONFIG` file (yaml/json/toml) → env vars `CITUS_MCP_*` → flags.
-
-Environment variables:
-- `CITUS_MCP_COORDINATOR_DSN` **(required)**
-- `CITUS_MCP_WORKER_DSNS`
-- `CITUS_MCP_CONNECT_TIMEOUT_SECONDS` (default 5)
-- `CITUS_MCP_STATEMENT_TIMEOUT_MS` (default 30000)
-- `CITUS_MCP_APP_NAME` (default citus-mcp)
-- `CITUS_MCP_MODE` (read_only|admin, default read_only)
+- `CITUS_MCP_SNAPSHOT_ADVISOR_COLLECT_BYTES` (default true)
 - `CITUS_MCP_ALLOW_EXECUTE` (default false)
 - `CITUS_MCP_APPROVAL_SECRET` (required if allow_execute)
-- `CITUS_MCP_MAX_ROWS` (default 200)
-- `CITUS_MCP_MAX_TEXT_BYTES` (default 200000)
-- `CITUS_MCP_ENABLE_CACHING` (default true)
 - `CITUS_MCP_CACHE_TTL_SECONDS` (default 5)
 - `CITUS_MCP_LOG_LEVEL` (default info)
 

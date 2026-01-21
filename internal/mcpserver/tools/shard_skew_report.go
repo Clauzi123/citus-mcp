@@ -168,10 +168,25 @@ func shardSkewReportTool(ctx context.Context, deps Dependencies, input ShardSkew
 		topShards = buildTopShards(shardBytes, shards, 10)
 	}
 
+	// ensure non-nil slices for JSON (avoid null)
+	if nodeSummaries == nil {
+		nodeSummaries = []NodeSkewSummary{}
+	}
+	if topShards == nil && input.IncludeTopShards {
+		topShards = []TopShard{}
+	}
+	if warnings == nil {
+		warnings = []string{}
+	}
 	if len(warnings) > 0 {
 		return nil, ShardSkewOutput{PerNode: nodeSummaries, Skew: skew, TopShards: topShards, Warnings: warnings}, nil
 	}
 	return nil, ShardSkewOutput{PerNode: nodeSummaries, Skew: skew, TopShards: topShards}, nil
+}
+
+// ShardSkewReport is exported for resources.
+func ShardSkewReport(ctx context.Context, deps Dependencies, input ShardSkewInput) (*mcp.CallToolResult, ShardSkewOutput, error) {
+	return shardSkewReportTool(ctx, deps, input)
 }
 
 type shardPlacementRow struct {
@@ -182,13 +197,12 @@ type shardPlacementRow struct {
 
 func fetchShardPlacements(ctx context.Context, deps Dependencies, schema, table string) ([]shardPlacementRow, error) {
 	q := `
-SELECT s.shardid, n.nodename, n.nodeport
+SELECT s.shardid, p.nodename, p.nodeport
 FROM pg_dist_shard s
-JOIN pg_dist_shard_placement p ON p.shardid = s.shardid
-JOIN pg_dist_node n ON n.nodeid = p.nodeid
+JOIN pg_dist_shard_placement p USING (shardid)
 JOIN pg_class c ON c.oid = s.logicalrelid
 JOIN pg_namespace ns ON ns.oid = c.relnamespace
-WHERE ($1 = '' OR (ns.nspname = $1 AND c.relname = $2))
+WHERE ($1 = '' OR (ns.nspname = $1::name AND c.relname = $2::name))
 `
 	rows, err := deps.Pool.Query(ctx, q, schema, table)
 	if err != nil {

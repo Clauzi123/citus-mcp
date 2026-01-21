@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	serr "citus-mcp/internal/errors"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -58,36 +57,32 @@ func listDistributedTablesV2(ctx context.Context, deps Dependencies, input ListD
 		}
 	}
 
-	// Build query with pagination on (schema,name)
-	// Using row values for pagination key comparison
+	// Prefer citus_tables view (Citus 14+) for consistent typing
 	q := `
-SELECT
-    n.nspname AS schema,
-    c.relname AS name,
-    a.attname AS distribution_column,
-    p.partmethod AS distribution_method,
-    p.colocationid AS colocation_id,
-    (SELECT count(*) FROM pg_dist_shard s WHERE s.logicalrelid = c.oid) AS shard_count,
-    COALESCE(p.replication_model, 'na') AS replication_model,
-    CASE
-        WHEN p.partmethod = 'n' THEN 'reference'
-        WHEN p.partmethod IS NOT NULL THEN 'distributed'
-        ELSE 'local'
-    END AS table_type,
-    COALESCE((SELECT count(*) FROM pg_dist_shard_placement sp JOIN pg_dist_shard s ON sp.shardid = s.shardid WHERE s.logicalrelid = c.oid) / GREATEST(1, (SELECT count(*) FROM pg_dist_shard s WHERE s.logicalrelid = c.oid)), 1) AS replication_factor
-FROM pg_dist_partition p
-JOIN pg_class c ON c.oid = p.logicalrelid
-JOIN pg_namespace n ON n.oid = c.relnamespace
-LEFT JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = p.partkey
-WHERE ($1 = '' OR n.nspname = $1)
-  AND (( $2 = '' AND $3 = '' ) OR (n.nspname, c.relname) > ($2, $3))
-ORDER BY n.nspname, c.relname
+WITH t AS (
+	SELECT
+		table_name::text AS qualified_name,
+		split_part(table_name::text, '.', 1) AS schema,
+		split_part(table_name::text, '.', 2) AS name,
+		distribution_column,
+		colocation_id,
+		shard_count,
+		citus_table_type
+	FROM citus_tables
+	WHERE citus_table_type = 'distributed'
+		AND ($1 = '' OR split_part(table_name::text, '.', 1) = $1)
+)
+SELECT schema, name, distribution_column, 'distributed' AS distribution_method, colocation_id, shard_count, citus_table_type AS table_type
+FROM t
+WHERE ($2 = '' AND $3 = '') OR (qualified_name > ($2 || '.' || $3))
+ORDER BY qualified_name
 LIMIT $4
 `
 
 	rows, err := deps.Pool.Query(ctx, q, schemaFilter, cursorSchema, cursorName, limit+1)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesV2Output{}, nil
+		// fallback to legacy if pagination query fails
+		return fallbackListDistributedTables(ctx, deps)
 	}
 	defer rows.Close()
 
@@ -97,26 +92,22 @@ LIMIT $4
 		if len(tables) == limit {
 			// one extra row for next cursor
 			var s, name string
-			if err := rows.Scan(&s, &name, new(string), new(string), new(int32), new(pgtype.Int4), new(string), new(string), new(pgtype.Int4)); err == nil {
+			if err := rows.Scan(&s, &name, new(string), new(string), new(int32), new(int32), new(string)); err == nil {
 				nextCursor = encodeCursor(s, name)
 			}
 			break
 		}
 		var t DistributedTable
-		var replModel string
-		var replFactor pgtype.Int4
-		if err := rows.Scan(&t.Schema, &t.Name, &t.DistributionColumn, &t.DistributionMethod, &t.ColocationID, &t.ShardCount, &replModel, &t.TableType, &replFactor); err != nil {
+		if err := rows.Scan(&t.Schema, &t.Name, &t.DistributionColumn, &t.DistributionMethod, &t.ColocationID, &t.ShardCount, &t.TableType); err != nil {
 			return callError(serr.CodeInternalError, err.Error(), "scan error"), ListDistributedTablesV2Output{}, nil
 		}
-		if replFactor.Valid {
-			t.ReplicationFactor = replFactor.Int32
-		} else {
-			t.ReplicationFactor = 1
-		}
+		// replication_factor not available directly; default 1
+		t.ReplicationFactor = 1
 		tables = append(tables, t)
 	}
 	if err := rows.Err(); err != nil {
-		return callError(serr.CodeInternalError, err.Error(), ""), ListDistributedTablesV2Output{}, nil
+		// fallback on error
+		return fallbackListDistributedTables(ctx, deps)
 	}
 
 	// stable ordering already ensured by ORDER BY
@@ -128,6 +119,41 @@ LIMIT $4
 	})
 
 	return nil, ListDistributedTablesV2Output{Tables: tables, Next: nextCursor}, nil
+}
+
+// ListDistributedTablesV2 is exported for resources.
+func ListDistributedTablesV2(ctx context.Context, deps Dependencies, input ListDistributedTablesV2Input) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
+	return listDistributedTablesV2(ctx, deps, input)
+}
+
+// fallbackListDistributedTables maps legacy output to v2 shape when pagination query fails.
+func fallbackListDistributedTables(ctx context.Context, deps Dependencies) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
+	_, legacy, err := ListDistributedTables(ctx, deps, ListDistributedTablesInput{})
+	if err != nil {
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesV2Output{}, nil
+	}
+	out := ListDistributedTablesV2Output{Tables: []DistributedTable{}}
+	for _, t := range legacy.Tables {
+		schema, name := splitSchemaTable(t.LogicalRelID)
+		tbl := DistributedTable{
+			Schema:             schema,
+			Name:               name,
+			DistributionMethod: t.PartMethod,
+			ColocationID:       t.ColocationID,
+			ReplicationFactor:  1,
+			TableType:          "distributed",
+		}
+		out.Tables = append(out.Tables, tbl)
+	}
+	return nil, out, nil
+}
+
+func splitSchemaTable(relid string) (string, string) {
+	idx := strings.LastIndex(relid, ".")
+	if idx <= 0 {
+		return "public", relid
+	}
+	return relid[:idx], relid[idx+1:]
 }
 
 func encodeCursor(schema, name string) string {

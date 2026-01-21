@@ -18,19 +18,20 @@ const (
 )
 
 type Config struct {
-	CoordinatorDSN        string   `mapstructure:"coordinator_dsn"`
-	WorkerDSNs            []string `mapstructure:"worker_dsns"`
-	ConnectTimeoutSeconds int      `mapstructure:"connect_timeout_seconds"`
-	StatementTimeoutMs    int      `mapstructure:"statement_timeout_ms"`
-	AppName               string   `mapstructure:"app_name"`
-	Mode                  Mode     `mapstructure:"mode"`
-	AllowExecute          bool     `mapstructure:"allow_execute"`
-	ApprovalSecret        string   `mapstructure:"approval_secret"`
-	MaxRows               int      `mapstructure:"max_rows"`
-	MaxTextBytes          int      `mapstructure:"max_text_bytes"`
-	EnableCaching         bool     `mapstructure:"enable_caching"`
-	CacheTTLSeconds       int      `mapstructure:"cache_ttl_seconds"`
-	LogLevel              string   `mapstructure:"log_level"`
+	CoordinatorDSN              string   `mapstructure:"coordinator_dsn"`
+	WorkerDSNs                  []string `mapstructure:"worker_dsns"`
+	ConnectTimeoutSeconds       int      `mapstructure:"connect_timeout_seconds"`
+	StatementTimeoutMs          int      `mapstructure:"statement_timeout_ms"`
+	AppName                     string   `mapstructure:"app_name"`
+	Mode                        Mode     `mapstructure:"mode"`
+	AllowExecute                bool     `mapstructure:"allow_execute"`
+	ApprovalSecret              string   `mapstructure:"approval_secret"`
+	MaxRows                     int      `mapstructure:"max_rows"`
+	MaxTextBytes                int      `mapstructure:"max_text_bytes"`
+	EnableCaching               bool     `mapstructure:"enable_caching"`
+	CacheTTLSeconds             int      `mapstructure:"cache_ttl_seconds"`
+	LogLevel                    string   `mapstructure:"log_level"`
+	SnapshotAdvisorCollectBytes bool     `mapstructure:"snapshot_advisor_collect_bytes"`
 }
 
 func defaults(v *viper.Viper) {
@@ -47,6 +48,7 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("enable_caching", true)
 	v.SetDefault("cache_ttl_seconds", 5)
 	v.SetDefault("log_level", "info")
+	v.SetDefault("snapshot_advisor_collect_bytes", true)
 }
 
 func Load() (Config, error) {
@@ -79,6 +81,7 @@ func Load() (Config, error) {
 	fs.Bool("enable-caching", true, "Enable caching")
 	fs.Int("cache-ttl-seconds", 5, "Cache TTL in seconds")
 	fs.String("log-level", "info", "Log level")
+	fs.Bool("snapshot-advisor-collect-bytes", true, "Collect bytes for snapshot advisor (may be heavy)")
 
 	// pflag -> std flag compatibility
 	_ = fs.Parse(os.Args[1:])

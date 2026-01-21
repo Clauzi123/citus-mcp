@@ -102,6 +102,11 @@ func clusterSummaryTool(ctx context.Context, deps Dependencies, input ClusterSum
 	return nil, out, nil
 }
 
+// ClusterSummary is exported for reuse by resources.
+func ClusterSummary(ctx context.Context, deps Dependencies, input ClusterSummaryInput) (*mcp.CallToolResult, ClusterSummaryOutput, error) {
+	return clusterSummaryTool(ctx, deps, input)
+}
+
 func fetchCounts(ctx context.Context, deps Dependencies) (CountsSummary, error) {
 	var counts CountsSummary
 	// distributed tables

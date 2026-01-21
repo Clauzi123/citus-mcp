@@ -165,6 +165,20 @@ func filterWorkers(nodes []NodeStatus) []NodeStatus {
 			workers = append(workers, n)
 		}
 	}
+	if len(workers) == 0 && len(nodes) > 1 {
+		// Fallback for clusters where all nodes report 'primary': assume smallest nodeid is coordinator
+		minID := nodes[0].NodeID
+		for _, n := range nodes {
+			if n.NodeID < minID {
+				minID = n.NodeID
+			}
+		}
+		for _, n := range nodes {
+			if n.NodeID != minID {
+				workers = append(workers, n)
+			}
+		}
+	}
 	return workers
 }
 
