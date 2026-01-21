@@ -105,7 +105,13 @@ func shardHeatmapTool(ctx context.Context, deps Dependencies, input ShardHeatmap
 			warnings = []string{}
 		}
 		warnings = append(warnings, "no shards found")
-		return nil, ShardHeatmapOutput{Warnings: warnings, Summary: ShardHeatmapSummary{GeneratedAt: time.Now().UTC().Format(time.RFC3339)}}, nil
+		return nil, ShardHeatmapOutput{
+			Warnings:  warnings,
+			Summary:   ShardHeatmapSummary{GeneratedAt: time.Now().UTC().Format(time.RFC3339)},
+			PerNode:   []NodeHeat{},
+			PerTable:  []TableHeat{},
+			HotShards: []HeatmapShard{},
+		}, nil
 	}
 
 	// aggregate per node and per table

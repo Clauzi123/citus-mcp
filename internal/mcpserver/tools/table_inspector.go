@@ -63,31 +63,32 @@ type TableConstraints struct {
 }
 
 func tableInspectorTool(ctx context.Context, deps Dependencies, input TableInspectorInput) (*mcp.CallToolResult, TableInspectorOutput, error) {
+	emptyOutput := TableInspectorOutput{PerNode: []NodeHeat{}}
 	if strings.TrimSpace(input.Table) == "" {
-		return callError(serr.CodeInvalidInput, "table is required", ""), TableInspectorOutput{}, nil
+		return callError(serr.CodeInvalidInput, "table is required", ""), emptyOutput, nil
 	}
 	if err := deps.Guardrails.RequireReadOnlySQL("SELECT 1"); err != nil {
-		return callError(serr.CodePermissionDenied, err.Error(), ""), TableInspectorOutput{}, nil
+		return callError(serr.CodePermissionDenied, err.Error(), ""), emptyOutput, nil
 	}
 	schema, rel, err := parseSchemaTable(input.Table)
 	if err != nil {
-		return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), TableInspectorOutput{}, nil
+		return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), emptyOutput, nil
 	}
 
-	out := TableInspectorOutput{Table: schema + "." + rel, Warnings: []string{}}
+	out := TableInspectorOutput{Table: schema + "." + rel, Warnings: []string{}, PerNode: []NodeHeat{}}
 
 	// fetch citus table metadata
 	var partmethod string
 	var coloc int32
 	var tableType string
-	qMeta := `SELECT p.partmethod, p.colocationid, p.logicalrelid::regclass::text, CASE WHEN p.partmethod='n' THEN 'reference' ELSE 'distributed' END
+	qMeta := `SELECT p.partmethod::text, p.colocationid, p.logicalrelid::regclass::text, CASE WHEN p.partmethod='n' THEN 'reference' ELSE 'distributed' END
 FROM pg_dist_partition p
 JOIN pg_class c ON c.oid = p.logicalrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname=$1::name AND c.relname=$2::name`
 	var tblreg string
 	if err := deps.Pool.QueryRow(ctx, qMeta, schema, rel).Scan(&partmethod, &coloc, &tblreg, &tableType); err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "metadata"), TableInspectorOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "metadata"), emptyOutput, nil
 	}
 	out.PartMethod = partmethod
 	out.Colocation = coloc

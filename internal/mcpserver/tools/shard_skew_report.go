@@ -64,20 +64,20 @@ func shardSkewReportTool(ctx context.Context, deps Dependencies, input ShardSkew
 	metricBytes := metric == "bytes"
 	// ensure read-only
 	if err := deps.Guardrails.RequireReadOnlySQL("SELECT 1"); err != nil {
-		return callError(serr.CodePermissionDenied, err.Error(), ""), ShardSkewOutput{}, nil
+		return callError(serr.CodePermissionDenied, err.Error(), ""), ShardSkewOutput{PerNode: []NodeSkewSummary{}}, nil
 	}
 
 	// validate citus
 	ext, err := db.GetExtensionInfo(ctx, deps.Pool)
 	if err != nil || ext == nil {
-		return callError(serr.CodeNotCitus, "citus extension not found", "enable citus extension"), ShardSkewOutput{}, nil
+		return callError(serr.CodeNotCitus, "citus extension not found", "enable citus extension"), ShardSkewOutput{PerNode: []NodeSkewSummary{}}, nil
 	}
 
 	var schema, table string
 	if input.Table != "" {
 		schema, table, err = parseSchemaTable(input.Table)
 		if err != nil {
-			return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), ShardSkewOutput{}, nil
+			return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), ShardSkewOutput{PerNode: []NodeSkewSummary{}}, nil
 		}
 	}
 
@@ -111,7 +111,7 @@ func shardSkewReportTool(ctx context.Context, deps Dependencies, input ShardSkew
 	// fetch shards and placements
 	shards, err := fetchShardPlacements(ctx, deps, schema, table)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "fetch shard placements"), ShardSkewOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "fetch shard placements"), ShardSkewOutput{PerNode: []NodeSkewSummary{}}, nil
 	}
 	if len(shards) == 0 {
 		warnings = append(warnings, "no shards found")
