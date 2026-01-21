@@ -28,6 +28,24 @@ type NodeStatus struct {
 	ShouldHaveShards bool `json:"should_have_shards"`
 }
 
+// ListNodes returns nodes (coordinator + workers) without status flags, for compatibility.
+func ListNodes(ctx context.Context, pool *pgxpool.Pool) ([]Node, error) {
+	rows, err := pool.Query(ctx, dbsql.QueryPgDistNode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var nodes []Node
+	for rows.Next() {
+		var n Node
+		if err := rows.Scan(&n.NodeID, &n.NodeName, &n.NodePort, &n.NodeRole); err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, n)
+	}
+	return nodes, rows.Err()
+}
+
 type WorkerInfo struct {
 	NodeStatus
 	DSN string `json:"dsn"`
