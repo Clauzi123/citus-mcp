@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -40,8 +39,8 @@ func DetectCapabilities(ctx context.Context, pool *pgxpool.Pool) (*Capabilities,
 
 	check := func(fn string) (bool, error) {
 		var ok bool
-		q := fmt.Sprintf("SELECT to_regproc('%s') IS NOT NULL", fn)
-		if err := pool.QueryRow(ctx, q).Scan(&ok); err != nil {
+		// Use parameterized query to prevent SQL injection
+		if err := pool.QueryRow(ctx, "SELECT to_regproc($1) IS NOT NULL", fn).Scan(&ok); err != nil {
 			return false, err
 		}
 		return ok, nil

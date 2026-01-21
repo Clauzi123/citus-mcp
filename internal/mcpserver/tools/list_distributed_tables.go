@@ -49,7 +49,7 @@ func listDistributedTablesV2(ctx context.Context, deps Dependencies, input ListD
 		tableType = "distributed"
 	}
 	if tableType != "distributed" && tableType != "reference" && tableType != "all" {
-		return callError(serr.CodeInvalidInput, "table_type must be one of [distributed, reference, all]", ""), ListDistributedTablesV2Output{}, nil
+		return callError(serr.CodeInvalidInput, "table_type must be one of [distributed, reference, all]", ""), ListDistributedTablesV2Output{Tables: []DistributedTable{}}, nil
 	}
 
 	// parse cursor
@@ -57,7 +57,7 @@ func listDistributedTablesV2(ctx context.Context, deps Dependencies, input ListD
 	if input.Cursor != "" {
 		decoded, err := base64.StdEncoding.DecodeString(input.Cursor)
 		if err != nil {
-			return callError(serr.CodeInvalidInput, "invalid cursor", ""), ListDistributedTablesV2Output{}, nil
+			return callError(serr.CodeInvalidInput, "invalid cursor", ""), ListDistributedTablesV2Output{Tables: []DistributedTable{}}, nil
 		}
 		parts := strings.SplitN(string(decoded), "\t", 2)
 		if len(parts) == 2 {
@@ -118,7 +118,7 @@ LIMIT $4
 		}
 		var t DistributedTable
 		if err := rows.Scan(&t.Schema, &t.Name, &t.DistributionColumn, &t.DistributionMethod, &t.ColocationID, &t.ShardCount, &t.TableType); err != nil {
-			return callError(serr.CodeInternalError, err.Error(), "scan error"), ListDistributedTablesV2Output{}, nil
+			return callError(serr.CodeInternalError, err.Error(), "scan error"), ListDistributedTablesV2Output{Tables: []DistributedTable{}}, nil
 		}
 		// replication_factor not available directly; default 1
 		t.ReplicationFactor = 1
@@ -151,7 +151,7 @@ func ListDistributedTablesV2(ctx context.Context, deps Dependencies, input ListD
 func fallbackListDistributedTables(ctx context.Context, deps Dependencies, tableType string, schemaFilter string) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
 	_, legacy, err := ListDistributedTables(ctx, deps, ListDistributedTablesInput{})
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesV2Output{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesV2Output{Tables: []DistributedTable{}}, nil
 	}
 	out := ListDistributedTablesV2Output{Tables: []DistributedTable{}}
 	for _, t := range legacy.Tables {

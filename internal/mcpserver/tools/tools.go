@@ -128,6 +128,19 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus_lock_inspector", Description: "Inspect cluster lock waits and locks (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input LockInspectorInput) (*mcp.CallToolResult, LockInspectorOutput, error) {
 		return citusLockInspectorTool(ctx, deps, input)
 	})
+
+	// New tools: Activity, Job Inspector, Colocation Inspector
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_activity", Description: "Cluster-wide activity monitor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ActivityInput) (*mcp.CallToolResult, ActivityOutput, error) {
+		return activityTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_job_inspector", Description: "Inspect background jobs (rebalance, copy) progress"}, func(ctx context.Context, req *mcp.CallToolRequest, input JobInspectorInput) (*mcp.CallToolResult, JobInspectorOutput, error) {
+		return jobInspectorTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_colocation_inspector", Description: "Inspect colocation groups and colocated tables"}, func(ctx context.Context, req *mcp.CallToolRequest, input ColocationInspectorInput) (*mcp.CallToolResult, ColocationInspectorOutput, error) {
+		return colocationInspectorTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
@@ -188,7 +201,10 @@ func ListNodes(ctx context.Context, deps Dependencies, input ListNodesInput) (*m
 	limit, offset := normalizeLimitOffset(deps.Config, input.Limit, input.Offset)
 	nodes, err := db.ListNodes(ctx, deps.Pool)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), ListNodesOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListNodesOutput{Nodes: []db.Node{}, Meta: Meta{}}, nil
+	}
+	if nodes == nil {
+		nodes = []db.Node{}
 	}
 	end := offset + limit
 	if end > len(nodes) {
@@ -247,7 +263,10 @@ func ListDistributedTables(ctx context.Context, deps Dependencies, input ListDis
 	limit, offset := normalizeLimitOffset(deps.Config, input.Limit, input.Offset)
 	tables, err := citus.ListDistributedTables(ctx, deps.Pool)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListDistributedTablesOutput{Tables: []citus.DistributedTable{}, Meta: Meta{}}, nil
+	}
+	if tables == nil {
+		tables = []citus.DistributedTable{}
 	}
 	end := offset + limit
 	if end > len(tables) {

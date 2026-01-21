@@ -84,18 +84,18 @@ func shardHeatmapTool(ctx context.Context, deps Dependencies, input ShardHeatmap
 	}
 	// ensure read-only
 	if err := deps.Guardrails.RequireReadOnlySQL("SELECT 1"); err != nil {
-		return callError(serr.CodePermissionDenied, err.Error(), ""), ShardHeatmapOutput{}, nil
+		return callError(serr.CodePermissionDenied, err.Error(), ""), ShardHeatmapOutput{PerNode: []NodeHeat{}, PerTable: []TableHeat{}, HotShards: []HeatmapShard{}}, nil
 	}
 
 	// validate citus
 	ext, err := db.GetExtensionInfo(ctx, deps.Pool)
 	if err != nil || ext == nil {
-		return callError(serr.CodeNotCitus, "citus extension not found", "enable citus extension"), ShardHeatmapOutput{}, nil
+		return callError(serr.CodeNotCitus, "citus extension not found", "enable citus extension"), ShardHeatmapOutput{PerNode: []NodeHeat{}, PerTable: []TableHeat{}, HotShards: []HeatmapShard{}}, nil
 	}
 
 	schema, table, err := parseOptionalSchemaTable(input.Table)
 	if err != nil {
-		return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), ShardHeatmapOutput{}, nil
+		return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), ShardHeatmapOutput{PerNode: []NodeHeat{}, PerTable: []TableHeat{}, HotShards: []HeatmapShard{}}, nil
 	}
 
 	// collect shards

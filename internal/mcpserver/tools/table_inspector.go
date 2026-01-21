@@ -157,13 +157,15 @@ func collectTableShards(ctx context.Context, deps Dependencies, schema, rel stri
 func collectIndexInfo(ctx context.Context, deps Dependencies, schema, rel, distCol string) ([]IndexInfo, []IndexDriftIssue, string) {
 	idxs := []IndexInfo{}
 	drift := []IndexDriftIssue{}
-	// expected indexes
+
+	// Get expected indexes from coordinator
 	rows, err := deps.Pool.Query(ctx, `SELECT indexname, indexdef, indisunique FROM pg_indexes i JOIN pg_class c ON c.relname=i.tablename JOIN pg_namespace n ON n.nspname=i.schemaname JOIN pg_index pi ON pi.indexrelid = i.indexname::regclass WHERE schemaname=$1 AND tablename=$2 ORDER BY indexname`, schema, rel)
 	if err != nil {
 		return idxs, drift, "failed to fetch indexes"
 	}
 	defer rows.Close()
-	expected := []string{}
+
+	expected := map[string]IndexInfo{}
 	for rows.Next() {
 		var name, def string
 		var unique bool
@@ -171,35 +173,67 @@ func collectIndexInfo(ctx context.Context, deps Dependencies, schema, rel, distC
 			continue
 		}
 		includeDist := distCol != "" && strings.Contains(def, fmt.Sprintf("(%s)", distCol))
-		idxs = append(idxs, IndexInfo{Name: name, Def: def, Unique: unique, IncludeDistKey: includeDist})
-		expected = append(expected, name)
+		idx := IndexInfo{Name: name, Def: def, Unique: unique, IncludeDistKey: includeDist}
+		idxs = append(idxs, idx)
+		expected[name] = idx
 	}
-	// drift detection via citus_shard_indexes_on_worker
-	rows2, err := deps.Pool.Query(ctx, `SELECT index_name, nodename||':'||nodeport as node FROM pg_catalog.citus_shard_indexes_on_worker WHERE logicalrelid=$1::regclass`, schema+"."+rel)
+
+	// Get all active worker nodes
+	var workerNodes []string
+	nodeRows, err := deps.Pool.Query(ctx, `SELECT DISTINCT nodename || ':' || nodeport FROM pg_dist_node WHERE isactive AND noderole = 'primary' AND nodename <> 'localhost' OR nodeport <> (SELECT setting::int FROM pg_settings WHERE name = 'port')`)
 	if err == nil {
-		present := map[string]map[string]bool{}
-		for rows2.Next() {
-			var idx, node string
-			if err := rows2.Scan(&idx, &node); err != nil {
-				continue
-			}
-			if present[idx] == nil {
-				present[idx] = map[string]bool{}
-			}
-			present[idx][node] = true
-		}
-		rows2.Close()
-		for _, idx := range expected {
-			nodes := present[idx]
-			// naive drift: if nodes count < replication factor * shards?
-			// We only report missing nodes if absent entirely
-			if len(nodes) == 0 {
-				// cannot detect missing per-node easily; skip
-				continue
+		defer nodeRows.Close()
+		for nodeRows.Next() {
+			var node string
+			if err := nodeRows.Scan(&node); err == nil {
+				workerNodes = append(workerNodes, node)
 			}
 		}
 	}
-	// TODO: improve index drift detection per placement
+
+	// Drift detection via citus_shard_indexes_on_worker
+	rows2, err := deps.Pool.Query(ctx, `
+		SELECT 
+			REGEXP_REPLACE(index_name, '_\d+$', '') as base_index_name,
+			nodename || ':' || nodeport as node
+		FROM pg_catalog.citus_shard_indexes_on_worker 
+		WHERE logicalrelid = $1::regclass`, schema+"."+rel)
+	if err == nil {
+		defer rows2.Close()
+
+		// Track which indexes are present on which nodes
+		indexNodePresence := map[string]map[string]bool{}
+		for rows2.Next() {
+			var baseIdxName, node string
+			if err := rows2.Scan(&baseIdxName, &node); err != nil {
+				continue
+			}
+			if indexNodePresence[baseIdxName] == nil {
+				indexNodePresence[baseIdxName] = map[string]bool{}
+			}
+			indexNodePresence[baseIdxName][node] = true
+		}
+
+		// Check for missing indexes on workers
+		for idxName := range expected {
+			presentOn := indexNodePresence[idxName]
+			missingNodes := []string{}
+
+			for _, node := range workerNodes {
+				if !presentOn[node] {
+					missingNodes = append(missingNodes, node)
+				}
+			}
+
+			if len(missingNodes) > 0 {
+				drift = append(drift, IndexDriftIssue{
+					IndexName: idxName,
+					MissingOn: missingNodes,
+				})
+			}
+		}
+	}
+
 	return idxs, drift, ""
 }
 

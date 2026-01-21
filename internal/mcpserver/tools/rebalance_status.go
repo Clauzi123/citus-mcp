@@ -46,7 +46,7 @@ func rebalanceStatusTool(ctx context.Context, deps Dependencies, input Rebalance
 	if deps.Capabilities != nil && deps.Capabilities.SupportsRebalanceProgress() {
 		return rebalanceStatusQuery(ctx, deps, "SELECT * FROM get_rebalance_progress()", limit, cursor)
 	}
-	return callError(serr.CodeCapabilityMissing, "rebalance status not supported", "Upgrade Citus"), RebalanceStatusOutput{}, nil
+	return callError(serr.CodeCapabilityMissing, "rebalance status not supported", "Upgrade Citus"), RebalanceStatusOutput{Rows: []map[string]any{}}, nil
 }
 
 func rebalanceStatusQuery(ctx context.Context, deps Dependencies, q string, limit int, cursor string) (*mcp.CallToolResult, RebalanceStatusOutput, error) {
@@ -60,7 +60,7 @@ func rebalanceStatusQuery(ctx context.Context, deps Dependencies, q string, limi
 	qWithLimit := q + " OFFSET " + strconv.Itoa(offset) + " LIMIT " + strconv.Itoa(limit+1)
 	rows, err := deps.Pool.Query(ctx, qWithLimit)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), RebalanceStatusOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), RebalanceStatusOutput{Rows: []map[string]any{}}, nil
 	}
 	defer rows.Close()
 
@@ -79,7 +79,7 @@ func rebalanceStatusQuery(ctx context.Context, deps Dependencies, q string, limi
 		}
 		vals, err := rows.Values()
 		if err != nil {
-			return callError(serr.CodeInternalError, err.Error(), "scan error"), RebalanceStatusOutput{}, nil
+			return callError(serr.CodeInternalError, err.Error(), "scan error"), RebalanceStatusOutput{Rows: []map[string]any{}}, nil
 		}
 		row := make(map[string]any, len(cols))
 		for i, c := range cols {
@@ -88,9 +88,12 @@ func rebalanceStatusQuery(ctx context.Context, deps Dependencies, q string, limi
 		outRows = append(outRows, row)
 	}
 	if err := rows.Err(); err != nil {
-		return callError(serr.CodeInternalError, err.Error(), ""), RebalanceStatusOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), ""), RebalanceStatusOutput{Rows: []map[string]any{}}, nil
 	}
 
 	// Stable ordering is provided by the functions themselves; we rely on default order.
+	if outRows == nil {
+		outRows = []map[string]any{}
+	}
 	return nil, RebalanceStatusOutput{Rows: outRows, Next: nextCursor}, nil
 }

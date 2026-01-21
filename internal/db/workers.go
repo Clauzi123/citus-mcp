@@ -126,14 +126,19 @@ func (m *WorkerManager) Pools(ctx context.Context) (map[int32]*pgxpool.Pool, []W
 }
 
 func (m *WorkerManager) ensurePool(ctx context.Context, nodeID int32, dsn string) (*pgxpool.Pool, error) {
+	// First check with read lock
 	m.mu.Lock()
 	pool, ok := m.pools[nodeID]
-	m.mu.Unlock()
 	if ok {
+		m.mu.Unlock()
 		return pool, nil
 	}
+	// Keep lock held during pool creation to prevent race condition
+	// where two goroutines create duplicate pools
+
 	pcfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
+		m.mu.Unlock()
 		return nil, err
 	}
 	pcfg.ConnConfig.ConnectTimeout = time.Duration(m.cfg.ConnectTimeoutSeconds) * time.Second
@@ -142,17 +147,31 @@ func (m *WorkerManager) ensurePool(ctx context.Context, nodeID int32, dsn string
 	}
 	pcfg.ConnConfig.RuntimeParams["application_name"] = m.cfg.AppName
 	pcfg.ConnConfig.RuntimeParams["statement_timeout"] = fmt.Sprintf("%d", m.cfg.StatementTimeoutMs)
+
+	// Release lock during potentially slow network operations
+	m.mu.Unlock()
+
 	pool, err = pgxpool.NewWithConfig(ctx, pcfg)
 	if err != nil {
 		return nil, err
 	}
+
 	// health check
 	pingCtx, cancel := context.WithTimeout(ctx, time.Duration(m.cfg.ConnectTimeoutSeconds)*time.Second)
 	defer cancel()
 	if err := pool.Ping(pingCtx); err != nil {
+		pool.Close() // Fix: close pool on ping failure to prevent resource leak
 		return nil, err
 	}
+
+	// Re-acquire lock and check if another goroutine already created the pool
 	m.mu.Lock()
+	if existingPool, ok := m.pools[nodeID]; ok {
+		// Another goroutine beat us - close our pool and return existing
+		m.mu.Unlock()
+		pool.Close()
+		return existingPool, nil
+	}
 	m.pools[nodeID] = pool
 	m.mu.Unlock()
 	return pool, nil
