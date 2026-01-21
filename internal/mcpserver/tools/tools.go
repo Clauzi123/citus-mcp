@@ -156,6 +156,14 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input NodePrepareInput) (*mcp.CallToolResult, NodePrepareOutput, error) {
 		return nodePrepareAdvisorTool(ctx, deps, input)
 	})
+
+	// Configuration Advisor: Comprehensive Citus and PostgreSQL GUC analysis
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "citus_config_advisor",
+		Description: "Comprehensive analysis of Citus and PostgreSQL configuration. Detects compatibility issues, performance problems, and provides best-practice recommendations with fix SQL.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input ConfigAdvisorInput) (*mcp.CallToolResult, ConfigAdvisorOutput, error) {
+		return configAdvisorTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
