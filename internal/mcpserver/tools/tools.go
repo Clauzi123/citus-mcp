@@ -53,6 +53,10 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "rebalance_table_execute", Description: "execute rebalance_table_shards (approval required)"}, func(ctx context.Context, req *mcp.CallToolRequest, input RebalanceTableExecuteInput) (*mcp.CallToolResult, RebalanceTableExecuteOutput, error) {
 		return RebalanceTableExecute(ctx, deps, input)
 	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.cluster_summary", Description: "cluster summary"}, func(ctx context.Context, req *mcp.CallToolRequest, input ClusterSummaryInput) (*mcp.CallToolResult, ClusterSummaryOutput, error) {
+		return clusterSummaryTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
