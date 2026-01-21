@@ -84,9 +84,13 @@ func GetRebalancePlan(ctx context.Context, pool *pgxpool.Pool, table *string, th
 	}
 	if len(excludedShards) > 0 {
 		args[3] = excludedShards
+	} else {
+		args[3] = []int64{} // empty array instead of NULL
 	}
 	if drainOnly != nil {
 		args[4] = *drainOnly
+	} else {
+		args[4] = false // default to false instead of NULL
 	}
 
 	const q = `SELECT table_name, shardid, shard_size, sourcename, sourceport, targetname, targetport FROM get_rebalance_table_shards_plan($1,$2,$3,$4,$5)`

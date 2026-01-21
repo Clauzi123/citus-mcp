@@ -4,7 +4,7 @@
       "command": "bin/citus-mcp",
       "args": [],
       "env": {
-        "CITUS_MCP_COORDINATOR_DSN": "postgres://localhost:5432/postgres?sslmode=disable"
+        "CITUS_MCP_COORDINATOR_DSN": "postgres://localhost:5432/reb?sslmode=disable"
       }
     }
   }

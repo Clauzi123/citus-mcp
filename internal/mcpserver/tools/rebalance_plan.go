@@ -57,7 +57,10 @@ func rebalancePlanTool(ctx context.Context, deps Dependencies, input RebalancePl
 	}
 	moves, err := citus.GetRebalancePlan(ctx, deps.Pool, tablePtr, input.Threshold, maxMoves, input.ExcludedShardList, input.DrainOnly)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "citus plan error"), RebalancePlanOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "citus plan error"), RebalancePlanOutput{Moves: []citus.RebalanceMove{}}, nil
+	}
+	if moves == nil {
+		moves = []citus.RebalanceMove{}
 	}
 
 	totalBytes := int64(0)

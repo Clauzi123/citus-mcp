@@ -43,7 +43,7 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 		return ListDistributedTables(ctx, deps, input)
 	})
 
-	mcp.AddTool(server, &mcp.Tool{Name: "list_shards", Description: "lists shards"}, func(ctx context.Context, req *mcp.CallToolRequest, input ListShardsInput) (*mcp.CallToolResult, ListShardsOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "list_shards", Description: "lists shards with table names and node placements"}, func(ctx context.Context, req *mcp.CallToolRequest, input ListShardsInput) (*mcp.CallToolResult, ListShardsOutput, error) {
 		return ListShards(ctx, deps, input)
 	})
 
@@ -224,7 +224,10 @@ func ListShards(ctx context.Context, deps Dependencies, input ListShardsInput) (
 	limit, offset := normalizeLimitOffset(deps.Config, input.Limit, input.Offset)
 	shards, err := citus.ListShards(ctx, deps.Pool)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), ListShardsOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), ListShardsOutput{Shards: []citus.Shard{}, Meta: Meta{}}, nil
+	}
+	if shards == nil {
+		shards = []citus.Shard{}
 	}
 	end := offset + limit
 	if end > len(shards) {
@@ -233,7 +236,11 @@ func ListShards(ctx context.Context, deps Dependencies, input ListShardsInput) (
 	if offset > len(shards) {
 		offset = len(shards)
 	}
-	return nil, ListShardsOutput{Shards: shards[offset:end], Meta: Meta{Limit: limit, Offset: offset, Total: len(shards)}}, nil
+	result := shards[offset:end]
+	if result == nil {
+		result = []citus.Shard{}
+	}
+	return nil, ListShardsOutput{Shards: result, Meta: Meta{Limit: limit, Offset: offset, Total: len(shards)}}, nil
 }
 
 func ListDistributedTables(ctx context.Context, deps Dependencies, input ListDistributedTablesInput) (*mcp.CallToolResult, ListDistributedTablesOutput, error) {
