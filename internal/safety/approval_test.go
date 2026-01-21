@@ -1,16 +1,15 @@
 package safety
 
 import (
-    "testing"
-    "time"
+	"testing"
 )
 
 func TestApprovalTokenLifecycle(t *testing.T) {
-    token, err := GenerateApprovalToken("secret", "action", time.Minute)
-    if err != nil {
-        t.Fatalf("GenerateApprovalToken error: %v", err)
-    }
-    if err := ValidateApprovalToken("secret", "action", token); err != nil {
-        t.Fatalf("ValidateApprovalToken error: %v", err)
-    }
+	token, err := GenerateApprovalToken("action", 60, "secret")
+	if err != nil {
+		t.Fatalf("GenerateApprovalToken error: %v", err)
+	}
+	if err := ValidateApprovalToken(token, "action", "secret"); err != nil {
+		t.Fatalf("ValidateApprovalToken error: %v", err)
+	}
 }

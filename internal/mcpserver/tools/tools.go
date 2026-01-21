@@ -93,6 +93,10 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.move_shard_execute", Description: "execute shard move (approval required)"}, func(ctx context.Context, req *mcp.CallToolRequest, input MoveShardExecuteInput) (*mcp.CallToolResult, MoveShardExecuteOutput, error) {
 		return moveShardExecuteTool(ctx, deps, input)
 	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.request_approval_token", Description: "request approval token (admin only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input RequestApprovalTokenInput) (*mcp.CallToolResult, RequestApprovalTokenOutput, error) {
+		return requestApprovalTokenTool(ctx, deps, input)
+	})
 }
 
 // Ping tool

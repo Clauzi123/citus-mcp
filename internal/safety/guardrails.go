@@ -2,7 +2,6 @@ package safety
 
 import (
 	"strings"
-	"time"
 
 	"citus-mcp/internal/config"
 	serr "citus-mcp/internal/errors"
@@ -41,7 +40,7 @@ func (g *Guardrails) RequireExecuteAllowed(token string, action string) error {
 	if token == "" {
 		return serr.NewApprovalRequired(action)
 	}
-	if err := ValidateApprovalToken(g.approvalSecret, action, token); err != nil {
+	if err := ValidateApprovalToken(token, action, g.approvalSecret); err != nil {
 		return serr.New(serr.CodeApprovalRequired, "invalid approval token", err.Error(), map[string]any{"action": action})
 	}
 	return nil
@@ -61,7 +60,7 @@ func (g *Guardrails) RequireToolAllowed(toolName string, isExecute bool, approva
 }
 
 func (g *Guardrails) GenerateApprovalToken(action string) (string, error) {
-	return GenerateApprovalToken(g.approvalSecret, action, time.Duration(g.approvalTTL)*time.Second)
+	return GenerateApprovalToken(action, int(g.approvalTTL), g.approvalSecret)
 }
 
 // RequireReadOnlySQL blocks non-read queries when in read-only mode.
