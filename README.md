@@ -127,6 +127,8 @@ You should see a "pong" response confirming the connection works.
 | `citus_advisor` | SRE + performance advisor with actionable recommendations |
 | `citus_snapshot_source_advisor` | Recommend source node for snapshot-based scaling |
 | `citus_validate_rebalance_prereqs` | Check if table is ready for rebalancing |
+| `citus_metadata_health` | Detect metadata corruption and inconsistencies with fix suggestions |
+| `citus_node_prepare_advisor` | Pre-flight checks and preparation script for adding new nodes |
 
 ### ⚡ Execute Operations (Requires Approval)
 
@@ -556,6 +558,14 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 @citus-mcp Suggest the best source node for snapshot-based scaling
 ```
 
+```
+@citus-mcp Check metadata health with deep validation across nodes
+```
+
+```
+@citus-mcp Run pre-flight checks for adding node at postgres://user:pass@newworker:5432/db
+```
+
 ### Colocation Analysis
 
 ```
@@ -602,6 +612,8 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 | `citus_advisor` | `focus?` (`skew`/`ops`), `max_tables?` | SRE advisor |
 | `citus_snapshot_source_advisor` | — | Node addition advice |
 | `citus_validate_rebalance_prereqs` | `table` (required) | Rebalance readiness |
+| `citus_metadata_health` | `level?` (`basic`/`thorough`/`deep`) | Metadata consistency checks |
+| `citus_node_prepare_advisor` | `target_dsn` (required) | Pre-flight node addition checks |
 
 ### Execute Tools (Require Approval)
 
