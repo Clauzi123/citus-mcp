@@ -28,13 +28,13 @@ func main() {
 		// fallback logger
 		zap.NewExample().Fatal("failed to load config", zap.Error(err))
 	}
-	logger, err := logging.NewLogger(cfg.Logging)
+	logger, err := logging.NewLogger(cfg.LogLevel)
 	if err != nil {
 		zap.NewExample().Fatal("failed to init logger", zap.Error(err))
 	}
 	defer logger.Sync()
 
-	pool, err := db.NewPool(ctx, cfg.DB, logger)
+	pool, err := db.NewPool(ctx, cfg)
 	if err != nil {
 		logger.Fatal("failed to connect pool", zap.Error(err))
 	}
