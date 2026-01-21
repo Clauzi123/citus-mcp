@@ -15,7 +15,7 @@ type ListDistributedTablesV2Input struct {
 	Schema    string `json:"schema,omitempty"`
 	Limit     int    `json:"limit,omitempty"`
 	Cursor    string `json:"cursor,omitempty"`
-	TableType string `json:"table_type,omitempty" jsonschema:"enum=distributed,enum=reference,enum=all"`
+	TableType string `json:"table_type,omitempty" enum:"distributed" enum:"reference" enum:"all"`
 }
 
 // ListDistributedTablesV2Output contains tables and pagination cursor.

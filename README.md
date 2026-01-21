@@ -21,6 +21,14 @@ An MCP server for Citus (PostgreSQL extension), providing read-heavy tooling wit
 
 - `citus_move_shard_plan`, `citus_move_shard_execute` (approval)
 - `citus_request_approval_token`
+- `citus_advisor` (Citus SRE + Query Performance Advisor)
+### Advisor
+Run the advisor in Copilot Chat:
+```
+@citus-mcp citus_advisor {"focus":"skew","max_tables":10}
+```
+
+Outputs summary, findings, table rankings, and next steps (read-only).
 
 ## Requirements
 - Go 1.22+

@@ -6,6 +6,7 @@ import (
 
 	"citus-mcp/internal/cache"
 	"citus-mcp/internal/citus"
+	advisorpkg "citus-mcp/internal/citus/advisor"
 	"citus-mcp/internal/config"
 	"citus-mcp/internal/db"
 	serr "citus-mcp/internal/errors"
@@ -108,6 +109,15 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 
 	mcp.AddTool(server, &mcp.Tool{Name: "citus_request_approval_token", Description: "request approval token (admin only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input RequestApprovalTokenInput) (*mcp.CallToolResult, RequestApprovalTokenOutput, error) {
 		return requestApprovalTokenTool(ctx, deps, input)
+	})
+
+	// Advisor (register underscore name for MCP compatibility)
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_advisor", Description: "Citus SRE + Query Performance Advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input CitusAdvisorInput) (*mcp.CallToolResult, advisorpkg.Output, error) {
+		return citusAdvisorTool(ctx, deps, input)
+	})
+	// Optional alias (may be rejected by some clients due to dot)
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.advisor", Description: "Citus SRE + Query Performance Advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input CitusAdvisorInput) (*mcp.CallToolResult, advisorpkg.Output, error) {
+		return citusAdvisorTool(ctx, deps, input)
 	})
 }
 
