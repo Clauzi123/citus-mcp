@@ -70,7 +70,7 @@ func scoreCandidates(workers []WorkerMetrics, before ClusterMetricsBefore, ideal
 			Source:           w.Node,
 			Score:            clamp(score, 0, 100),
 			PredictedAfter:   pred,
-			Why:              nil, // filled later in buildReasons
+			Why:              []string{}, // empty slice to satisfy schema
 			reachable:        w.Reachable,
 			shouldHaveShards: w.ShouldHaveShards,
 		})
