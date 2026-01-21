@@ -1,0 +1,39 @@
+version: '3.9'
+services:
+  coordinator:
+    image: citusdata/citus:12.1
+    container_name: citus-coordinator
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      CITUS_ROLE: Coordinator
+      CITUS_NODE_NAME: coordinator
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  worker1:
+    image: citusdata/citus:12.1
+    container_name: citus-worker1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      CITUS_ROLE: Worker
+      CITUS_NODE_NAME: worker1
+      CITUS_COORDINATOR_HOST: coordinator
+    depends_on:
+      - coordinator
+
+  worker2:
+    image: citusdata/citus:12.1
+    container_name: citus-worker2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      CITUS_ROLE: Worker
+      CITUS_NODE_NAME: worker2
+      CITUS_COORDINATOR_HOST: coordinator
+    depends_on:
+      - coordinator
