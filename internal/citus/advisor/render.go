@@ -43,7 +43,7 @@ func Render(ctx *AdvisorContext, findings []Finding) Output {
 	})
 
 	// Table rankings
-	var rankings []TableRanking
+	rankings := []TableRanking{}
 	for tbl, score := range tableScores {
 		rankings = append(rankings, TableRanking{Table: tbl, ImpactScore: score, Reasons: tableReasons[tbl]})
 	}
@@ -55,7 +55,7 @@ func Render(ctx *AdvisorContext, findings []Finding) Output {
 	})
 
 	// Cluster observations: pick cluster-scope findings
-	var obs []FindingSnippet
+	obs := []FindingSnippet{}
 	for _, f := range findings {
 		if f.Scope == "cluster" {
 			obs = append(obs, FindingSnippet{Severity: f.Severity, Title: f.Title, Details: f.Problem, Evidence: f.Evidence})
@@ -78,6 +78,9 @@ func Render(ctx *AdvisorContext, findings []Finding) Output {
 	// Limit findings to MaxFindings
 	if ctx.MaxFindings > 0 && len(findings) > ctx.MaxFindings {
 		findings = findings[:ctx.MaxFindings]
+	}
+	if findings == nil {
+		findings = []Finding{}
 	}
 
 	return Output{

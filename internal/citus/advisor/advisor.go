@@ -328,7 +328,7 @@ func (c *Collector) CollectCluster(ctx context.Context, ac *AdvisorContext) erro
 	_ = c.pool.QueryRow(ctx, "SELECT count(*) FROM pg_dist_placement").Scan(&ac.Cluster.Counts.PlacementsTotal)
 
 	// workers
-	rows, err := c.pool.Query(ctx, "SELECT node_nodename, node_port, isactive, shouldhaveshards FROM pg_dist_node WHERE noderole='worker'")
+	rows, err := c.pool.Query(ctx, "SELECT nodename, nodeport, COALESCE(isactive, true), COALESCE(shouldhaveshards, true) FROM pg_dist_node WHERE noderole::text = 'worker' OR noderole::text = 'primary'")
 	if err != nil {
 		return nil
 	}
@@ -346,7 +346,7 @@ func (c *Collector) CollectCluster(ctx context.Context, ac *AdvisorContext) erro
 // CollectTables collects distributed/reference tables and metadata.
 func (c *Collector) CollectTables(ctx context.Context, ac *AdvisorContext, schema, table string, max int) error {
 	q := `
-SELECT n.nspname, c.relname, p.partmethod, p.colocationid
+SELECT n.nspname, c.relname, p.partmethod::text, p.colocationid
 FROM pg_dist_partition p
 JOIN pg_class c ON c.oid = p.logicalrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -406,13 +406,11 @@ LIMIT $3`
 
 // CollectSkew computes shard count skew per node.
 func (c *Collector) CollectSkew(ctx context.Context, ac *AdvisorContext) error {
-	// shard counts per node
-	countQ := `SELECT n.nodename, n.nodeport, count(*)
-FROM pg_dist_placement p
-JOIN pg_dist_node n ON n.nodeid = p.nodeid
-WHERE n.noderole='worker'
-GROUP BY n.nodename, n.nodeport
-ORDER BY n.nodename, n.nodeport`
+	// shard counts per node (using pg_dist_shard_placement which has nodename/nodeport directly)
+	countQ := `SELECT nodename, nodeport, count(*)
+FROM pg_dist_shard_placement
+GROUP BY nodename, nodeport
+ORDER BY nodename, nodeport`
 	rows, err := c.pool.Query(ctx, countQ)
 	if err != nil {
 		return err
