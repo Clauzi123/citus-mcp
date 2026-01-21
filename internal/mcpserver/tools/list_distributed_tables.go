@@ -66,19 +66,30 @@ func listDistributedTablesV2(ctx context.Context, deps Dependencies, input ListD
 	}
 
 	// Prefer citus_tables view (Citus 14+) for consistent typing
+	// Note: table_name may be schema-qualified (e.g. "myschema.mytable") or unqualified for public schema (e.g. "mytable")
 	q := `
 WITH t AS (
 	SELECT
 		table_name::text AS qualified_name,
-		split_part(table_name::text, '.', 1) AS schema,
-		split_part(table_name::text, '.', 2) AS name,
+		CASE
+			WHEN position('.' in table_name::text) > 0 THEN split_part(table_name::text, '.', 1)
+			ELSE 'public'
+		END AS schema,
+		CASE
+			WHEN position('.' in table_name::text) > 0 THEN split_part(table_name::text, '.', 2)
+			ELSE table_name::text
+		END AS name,
 		distribution_column,
 		colocation_id,
 		shard_count,
 		citus_table_type
 	FROM citus_tables
 	WHERE citus_table_type IN ('distributed','reference')
-		AND ($1 = '' OR split_part(table_name::text, '.', 1) = $1)
+		AND ($1 = '' OR
+			CASE
+				WHEN position('.' in table_name::text) > 0 THEN split_part(table_name::text, '.', 1)
+				ELSE 'public'
+			END = $1)
 )
 SELECT schema, name, distribution_column, citus_table_type AS distribution_method, colocation_id, shard_count, citus_table_type AS table_type
 FROM t
