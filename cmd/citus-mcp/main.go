@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"citus-mcp/internal/config"
-	"citus-mcp/internal/db"
 	"citus-mcp/internal/logging"
 	"citus-mcp/internal/mcpserver"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -34,17 +33,11 @@ func main() {
 	}
 	defer logger.Sync()
 
-	pool, err := db.NewPool(ctx, cfg)
-	if err != nil {
-		logger.Fatal("failed to connect pool", zap.Error(err))
-	}
-	defer pool.Close()
-
-	impl := &mcp.Implementation{Name: serverName, Version: serverVersion}
-	srv, err := mcpserver.New(ctx, impl, cfg, logger, pool)
+	srv, err := mcpserver.New(cfg, logger)
 	if err != nil {
 		logger.Fatal("failed to create server", zap.Error(err))
 	}
+	defer srv.Close()
 	transport := &mcp.StdioTransport{}
 	logger.Info("starting citus-mcp server", zap.String("name", serverName), zap.String("version", serverVersion))
 	if err := srv.Run(ctx, transport); err != nil {

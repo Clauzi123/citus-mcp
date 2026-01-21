@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"citus-mcp/internal/cache"
 	"citus-mcp/internal/citus"
 	"citus-mcp/internal/config"
 	"citus-mcp/internal/db"
@@ -15,13 +16,16 @@ import (
 )
 
 type Dependencies struct {
-	Pool       *pgxpool.Pool
-	Logger     *zap.Logger
-	Guardrails *safety.Guardrails
-	Config     config.Config
+	Pool          *pgxpool.Pool
+	Logger        *zap.Logger
+	Guardrails    *safety.Guardrails
+	Config        config.Config
+	WorkerManager *db.WorkerManager
+	Capabilities  *db.Capabilities
+	Cache         *cache.Cache
 }
 
-func Register(server *mcp.Server, deps Dependencies) {
+func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "ping", Description: "ping the server"}, func(ctx context.Context, req *mcp.CallToolRequest, input PingInput) (*mcp.CallToolResult, PingOutput, error) {
 		return Ping(ctx, deps, input)
 	})
