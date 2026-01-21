@@ -35,27 +35,34 @@ type DetectedProps struct {
 }
 
 func validateRebalancePrereqsTool(ctx context.Context, deps Dependencies, input ValidateRebalancePrereqsInput) (*mcp.CallToolResult, ValidateRebalancePrereqsOutput, error) {
+	emptyOutput := ValidateRebalancePrereqsOutput{
+		Issues: []Issue{},
+		Detected: DetectedProps{
+			CandidateUniqueIdxs: []string{},
+		},
+	}
+
 	table := strings.TrimSpace(input.Table)
 	if table == "" {
-		return callError(serr.CodeInvalidInput, "table is required", ""), ValidateRebalancePrereqsOutput{}, nil
+		return callError(serr.CodeInvalidInput, "table is required", ""), emptyOutput, nil
 	}
 	if err := deps.Guardrails.RequireReadOnlySQL("SELECT 1"); err != nil {
-		return callError(serr.CodePermissionDenied, err.Error(), ""), ValidateRebalancePrereqsOutput{}, nil
+		return callError(serr.CodePermissionDenied, err.Error(), ""), emptyOutput, nil
 	}
 
 	schema, rel, err := parseSchemaTable(table)
 	if err != nil {
-		return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), ValidateRebalancePrereqsOutput{}, nil
+		return callError(serr.CodeInvalidInput, "invalid table format", "use schema.table"), emptyOutput, nil
 	}
 
 	distributionCol, err := fetchDistributionColumn(ctx, deps, schema, rel)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "fetch distribution column"), ValidateRebalancePrereqsOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "fetch distribution column"), emptyOutput, nil
 	}
 
 	hasPK, replicaIdent, candidateIdxs, err := fetchIndexInfo(ctx, deps, schema, rel, distributionCol)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "fetch index info"), ValidateRebalancePrereqsOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "fetch index info"), emptyOutput, nil
 	}
 
 	ready := true
@@ -73,6 +80,11 @@ func validateRebalancePrereqsTool(ctx context.Context, deps Dependencies, input 
 		} else {
 			issues = append(issues, Issue{Code: "REPLICA_IDENTITY_DEFAULT", Message: "Replica identity DEFAULT (none); set using suitable unique index", SuggestedFixSQL: fmt.Sprintf("ALTER TABLE %s.%s REPLICA IDENTITY FULL; -- Not recommended; prefer USING INDEX", safety.QuoteIdent(schema), safety.QuoteIdent(rel))})
 		}
+	}
+
+	// Ensure non-nil slice for JSON serialization
+	if candidateIdxs == nil {
+		candidateIdxs = []string{}
 	}
 
 	return nil, ValidateRebalancePrereqsOutput{
@@ -120,7 +132,7 @@ SELECT EXISTS (
 		return
 	}
 	const replq = `
-SELECT c.relreplident
+SELECT c.relreplident::text
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = $1::name AND c.relname = $2::name`

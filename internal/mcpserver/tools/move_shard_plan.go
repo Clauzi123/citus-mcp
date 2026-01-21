@@ -35,13 +35,18 @@ type MoveShardOperation struct {
 }
 
 func moveShardPlanTool(ctx context.Context, deps Dependencies, input MoveShardPlanInput) (*mcp.CallToolResult, MoveShardPlanOutput, error) {
+	emptyOutput := MoveShardPlanOutput{
+		Operations: []MoveShardOperation{},
+		Warnings:   []string{},
+	}
+
 	// read-only tool; plan only
 	if err := deps.Guardrails.RequireReadOnlySQL("SELECT 1"); err != nil {
-		return callError(serr.CodePermissionDenied, err.Error(), ""), MoveShardPlanOutput{}, nil
+		return callError(serr.CodePermissionDenied, err.Error(), ""), emptyOutput, nil
 	}
 
 	if deps.Capabilities == nil || !deps.Capabilities.SupportsShardMove() {
-		return callError(serr.CodeCapabilityMissing, "citus_move_shard_placement not available", "Upgrade Citus"), MoveShardPlanOutput{}, nil
+		return callError(serr.CodeCapabilityMissing, "citus_move_shard_placement not available", "Upgrade Citus"), emptyOutput, nil
 	}
 
 	warnings := []string{}
@@ -53,7 +58,7 @@ JOIN pg_dist_node n ON n.nodeid = p.nodeid
 WHERE p.shardid = $1
 `, input.ShardID)
 	if err != nil {
-		return callError(serr.CodeInternalError, err.Error(), "db error"), MoveShardPlanOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), "db error"), emptyOutput, nil
 	}
 	defer placements.Close()
 	matches := false
@@ -62,14 +67,14 @@ WHERE p.shardid = $1
 		var hn string
 		var pt int32
 		if err := placements.Scan(&sid, &hn, &pt); err != nil {
-			return callError(serr.CodeInternalError, err.Error(), ""), MoveShardPlanOutput{}, nil
+			return callError(serr.CodeInternalError, err.Error(), ""), emptyOutput, nil
 		}
 		if hn == input.SourceHost && int(pt) == input.SourcePort {
 			matches = true
 		}
 	}
 	if err := placements.Err(); err != nil {
-		return callError(serr.CodeInternalError, err.Error(), ""), MoveShardPlanOutput{}, nil
+		return callError(serr.CodeInternalError, err.Error(), ""), emptyOutput, nil
 	}
 	if !matches {
 		warnings = append(warnings, "shard not found on source")
