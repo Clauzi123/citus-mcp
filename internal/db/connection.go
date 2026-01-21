@@ -18,6 +18,12 @@ func NewPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse pool config: %w", err)
 	}
+	if cfg.CoordinatorUser != "" {
+		pcfg.ConnConfig.User = cfg.CoordinatorUser
+	}
+	if cfg.CoordinatorPassword != "" {
+		pcfg.ConnConfig.Password = cfg.CoordinatorPassword
+	}
 	pcfg.ConnConfig.ConnectTimeout = time.Duration(cfg.ConnectTimeoutSeconds) * time.Second
 	if pcfg.ConnConfig.RuntimeParams == nil {
 		pcfg.ConnConfig.RuntimeParams = map[string]string{}

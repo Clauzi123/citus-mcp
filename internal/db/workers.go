@@ -233,6 +233,12 @@ func (m *WorkerManager) resolveDSN(n NodeStatus) string {
 		m.logger.Warn("cannot parse coordinator dsn to derive worker dsn", zap.Error(err))
 		return ""
 	}
+	if m.cfg.CoordinatorUser != "" {
+		ccfg.User = m.cfg.CoordinatorUser
+	}
+	if m.cfg.CoordinatorPassword != "" {
+		ccfg.Password = m.cfg.CoordinatorPassword
+	}
 	ccfg.Host = n.NodeName
 	ccfg.Port = uint16(n.NodePort)
 	if ccfg.RuntimeParams == nil {

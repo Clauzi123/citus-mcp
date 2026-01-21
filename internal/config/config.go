@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -19,6 +20,8 @@ const (
 
 type Config struct {
 	CoordinatorDSN              string   `mapstructure:"coordinator_dsn"`
+	CoordinatorUser             string   `mapstructure:"coordinator_user"`
+	CoordinatorPassword         string   `mapstructure:"coordinator_password"`
 	WorkerDSNs                  []string `mapstructure:"worker_dsns"`
 	ConnectTimeoutSeconds       int      `mapstructure:"connect_timeout_seconds"`
 	StatementTimeoutMs          int      `mapstructure:"statement_timeout_ms"`
@@ -36,6 +39,8 @@ type Config struct {
 
 func defaults(v *viper.Viper) {
 	v.SetDefault("coordinator_dsn", "")
+	v.SetDefault("coordinator_user", "")
+	v.SetDefault("coordinator_password", "")
 	v.SetDefault("worker_dsns", []string{})
 	v.SetDefault("connect_timeout_seconds", 5)
 	v.SetDefault("statement_timeout_ms", 30000)
@@ -58,17 +63,14 @@ func Load() (Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
-	// Config file
-	if cfgPath := os.Getenv("CITUS_MCP_CONFIG"); cfgPath != "" {
-		v.SetConfigFile(cfgPath)
-		if err := v.ReadInConfig(); err != nil {
-			return Config{}, fmt.Errorf("read config file %s: %w", cfgPath, err)
-		}
-	}
-
-	// Flags override
+	// Flags override (parse early to locate config file)
 	fs := pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
+	var cfgPathFlag string
+	fs.StringVarP(&cfgPathFlag, "config", "c", "", "Config file path (yaml|json|toml)")
 	fs.String("coordinator-dsn", "", "Coordinator DSN (postgres://…)")
+	fs.String("dsn", "", "Coordinator DSN (alias for coordinator-dsn)")
+	fs.String("coordinator-user", "", "Coordinator user (optional override)")
+	fs.String("coordinator-password", "", "Coordinator password (optional override)")
 	fs.StringSlice("worker-dsn", []string{}, "Worker DSNs (repeatable)")
 	fs.Int("connect-timeout-seconds", 5, "Connection timeout in seconds")
 	fs.Int("statement-timeout-ms", 30000, "Statement timeout in milliseconds")
@@ -85,7 +87,31 @@ func Load() (Config, error) {
 
 	// pflag -> std flag compatibility
 	_ = fs.Parse(os.Args[1:])
+
+	// Config file resolution
+	cfgPath := cfgPathFlag
+	if cfgPath == "" {
+		cfgPath = os.Getenv("CITUS_MCP_CONFIG")
+	}
+	if cfgPath != "" {
+		if err := readConfigFile(v, cfgPath); err != nil {
+			return Config{}, err
+		}
+	} else {
+		_ = readDefaultConfig(v) // best-effort
+	}
+
+	// Flags override config
 	_ = v.BindPFlags(fs)
+
+	// positional DSN fallback
+	if v.GetString("coordinator_dsn") == "" {
+		if dsn := v.GetString("dsn"); dsn != "" {
+			v.Set("coordinator_dsn", dsn)
+		} else if args := fs.Args(); len(args) > 0 && args[0] != "" {
+			v.Set("coordinator_dsn", args[0])
+		}
+	}
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -120,4 +146,52 @@ func validate(cfg Config) error {
 		return errors.New("config: max_text_bytes must be > 0")
 	}
 	return nil
+}
+
+func readConfigFile(v *viper.Viper, path string) error {
+	v.SetConfigFile(path)
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("read config file %s: %w", path, err)
+	}
+	return nil
+}
+
+func readDefaultConfig(v *viper.Viper) error {
+	paths := defaultConfigCandidates()
+	exts := []string{"yaml", "yml", "json", "toml"}
+	for _, base := range paths {
+		for _, ext := range exts {
+			candidate := base + "." + ext
+			if _, err := os.Stat(candidate); err == nil {
+				v.SetConfigFile(candidate)
+				if err := v.ReadInConfig(); err != nil {
+					return fmt.Errorf("read default config %s: %w", candidate, err)
+				}
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func defaultConfigCandidates() []string {
+	var out []string
+	cwd, _ := os.Getwd()
+	if cwd != "" {
+		out = append(out,
+			filepath.Join(cwd, "citus-mcp"),
+			filepath.Join(cwd, "config", "citus-mcp"),
+		)
+	}
+	xdg := os.Getenv("XDG_CONFIG_HOME")
+	if xdg == "" {
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			xdg = filepath.Join(home, ".config")
+		}
+	}
+	if xdg != "" {
+		out = append(out, filepath.Join(xdg, "citus-mcp", "config"))
+	}
+	return out
 }
