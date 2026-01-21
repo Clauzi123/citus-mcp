@@ -23,6 +23,7 @@ func EvaluateRules(ctx *AdvisorContext) []Finding {
 		&RuleRebalancePrereqs{},
 		&RuleRebalanceNotSupported{},
 		&RuleHighShardSkew{},
+		&RuleHotShardCandidates{},
 		&RuleNonColocatedJoins{},
 		&RuleStatsStale{},
 		&RuleMissingDistKeyIndex{},
@@ -212,6 +213,9 @@ func (r *RuleHighShardSkew) Evaluate(ctx *AdvisorContext) []Finding {
 		return nil
 	}
 	ratio := ctx.Skew.Ratio
+	if ctx.Skew.BytesRatio > 0 {
+		ratio = ctx.Skew.BytesRatio
+	}
 	var sev string
 	switch {
 	case ratio >= 3:
@@ -229,6 +233,49 @@ func (r *RuleHighShardSkew) Evaluate(ctx *AdvisorContext) []Finding {
 	evidence := Evidence{"ratio": ratio, "nodes": ctx.Skew.PerNode}
 	next := []NextStep{{Tool: "citus_rebalance_plan"}, {Tool: "citus_shard_skew_report"}}
 	return []Finding{MakeFinding(r.ID(), sev, r.Category(), "cluster", "cluster", "Shard distribution skew detected", fmt.Sprintf("Shard count ratio %.2f", ratio), "Uneven load across workers", "Plan rebalance and review distribution keys", evidence, nil, next)}
+}
+
+// RuleHotShardCandidates detects very large shards vs average (bytes).
+type RuleHotShardCandidates struct{}
+
+func (r *RuleHotShardCandidates) ID() string       { return "rule.hot_shard_candidates" }
+func (r *RuleHotShardCandidates) Category() string { return "skew" }
+func (r *RuleHotShardCandidates) Evaluate(ctx *AdvisorContext) []Finding {
+	if ctx.HotShardsByTable == nil {
+		return nil
+	}
+	var findings []Finding
+	for tbl, shards := range ctx.HotShardsByTable {
+		if len(shards) == 0 {
+			continue
+		}
+		var sum int64
+		var max int64
+		var maxShard HotShardInfo
+		for _, sh := range shards {
+			sum += sh.Bytes
+			if sh.Bytes > max {
+				max = sh.Bytes
+				maxShard = sh
+			}
+		}
+		avg := float64(sum) / float64(len(shards))
+		if avg == 0 {
+			continue
+		}
+		ratio := float64(max) / avg
+		if ratio < 3 {
+			continue
+		}
+		severity := "warning"
+		if ratio >= 5 {
+			severity = "critical"
+		}
+		evidence := Evidence{"hot_shard": maxShard, "avg_bytes": avg, "ratio": ratio}
+		next := []NextStep{{Tool: "citus_shard_heatmap", Args: map[string]interface{}{"table": tbl}}, {Tool: "citus_rebalance_plan"}}
+		findings = append(findings, MakeFinding(r.ID(), severity, r.Category(), "table", tbl, "Hot shard detected", "Shard significantly larger than average", "Uneven storage/load", "Consider rebalance or distribution key review", evidence, nil, next))
+	}
+	return findings
 }
 
 // RuleNonColocatedJoins heuristic.

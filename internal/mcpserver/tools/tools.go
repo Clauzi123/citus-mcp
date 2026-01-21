@@ -119,6 +119,15 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.advisor", Description: "Citus SRE + Query Performance Advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input CitusAdvisorInput) (*mcp.CallToolResult, advisorpkg.Output, error) {
 		return citusAdvisorTool(ctx, deps, input)
 	})
+
+	// Shard heatmap tool (uses citus_shards view when available)
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_shard_heatmap", Description: "Shard heatmap & hot shard advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardHeatmapInput) (*mcp.CallToolResult, ShardHeatmapOutput, error) {
+		return shardHeatmapTool(ctx, deps, input)
+	})
+	// Optional alias
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.shard_heatmap", Description: "Shard heatmap & hot shard advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardHeatmapInput) (*mcp.CallToolResult, ShardHeatmapOutput, error) {
+		return shardHeatmapTool(ctx, deps, input)
+	})
 }
 
 // Ping tool

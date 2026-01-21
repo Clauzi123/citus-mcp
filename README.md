@@ -22,6 +22,7 @@ An MCP server for Citus (PostgreSQL extension), providing read-heavy tooling wit
 - `citus_move_shard_plan`, `citus_move_shard_execute` (approval)
 - `citus_request_approval_token`
 - `citus_advisor` (Citus SRE + Query Performance Advisor)
+- `citus_shard_heatmap` (Hot shards & node/table heatmap)
 ### Advisor
 Run the advisor in Copilot Chat:
 ```
@@ -29,6 +30,12 @@ Run the advisor in Copilot Chat:
 ```
 
 Outputs summary, findings, table rankings, and next steps (read-only).
+
+### Shard Heatmap
+```
+@citus-mcp citus_shard_heatmap {"table":"copy_oom_demo.copy_target","limit":10}
+```
+Uses `pg_catalog.citus_shards` when available; falls back to `citus_shard_sizes()` and shard counts.
 
 ## Requirements
 - Go 1.22+

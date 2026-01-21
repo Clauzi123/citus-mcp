@@ -36,3 +36,20 @@ func TestRuleStatsStale(t *testing.T) {
 		t.Fatalf("expected stale stats finding")
 	}
 }
+
+func TestRuleHotShardCandidates(t *testing.T) {
+	ctx := &AdvisorContext{HotShardsByTable: map[string][]HotShardInfo{
+		"public.t1": {
+			{ShardID: 1, Table: "public.t1", Bytes: 0, Node: "n1"},
+			{ShardID: 2, Table: "public.t1", Bytes: 0, Node: "n2"},
+			{ShardID: 3, Table: "public.t1", Bytes: 9000, Node: "n3"},
+		},
+	}}
+	fs := (&RuleHotShardCandidates{}).Evaluate(ctx)
+	if len(fs) != 1 {
+		t.Fatalf("expected hot shard finding")
+	}
+	if fs[0].Severity != "warning" {
+		t.Fatalf("expected warning severity")
+	}
+}

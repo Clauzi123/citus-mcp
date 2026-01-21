@@ -144,12 +144,13 @@ type AdvisorContext struct {
 	IncludeNext  bool
 	MaxFindings  int
 
-	Cluster   ClusterSnapshot
-	Tables    []TableMeta
-	TableMeta map[string]*TableMeta // keyed by qualified name
-	Skew      SkewSnapshot
-	Prereqs   map[string]PrereqOutput
-	Queries   map[string][]QuerySample
+	Cluster          ClusterSnapshot
+	Tables           []TableMeta
+	TableMeta        map[string]*TableMeta // keyed by qualified name
+	Skew             SkewSnapshot
+	Prereqs          map[string]PrereqOutput
+	Queries          map[string][]QuerySample
+	HotShardsByTable map[string][]HotShardInfo
 }
 
 type QuerySample struct {
@@ -157,10 +158,18 @@ type QuerySample struct {
 	Calls int64  `json:"calls"`
 }
 
+type HotShardInfo struct {
+	ShardID int64  `json:"shard_id"`
+	Table   string `json:"table"`
+	Bytes   int64  `json:"bytes"`
+	Node    string `json:"node"`
+}
+
 // SkewSnapshot captures per-node shard counts/bytes.
 type SkewSnapshot struct {
-	PerNode []NodeSkew
-	Ratio   float64
+	PerNode    []NodeSkew
+	Ratio      float64
+	BytesRatio float64
 }
 
 type NodeSkew struct {
@@ -338,45 +347,103 @@ LIMIT $3`
 
 // CollectSkew computes shard count skew per node.
 func (c *Collector) CollectSkew(ctx context.Context, ac *AdvisorContext) error {
-	q := `SELECT n.nodename, n.nodeport, count(*)
+	// shard counts per node
+	countQ := `SELECT n.nodename, n.nodeport, count(*)
 FROM pg_dist_placement p
 JOIN pg_dist_node n ON n.nodeid = p.nodeid
 WHERE n.noderole='worker'
 GROUP BY n.nodename, n.nodeport
 ORDER BY n.nodename, n.nodeport`
-	rows, err := c.pool.Query(ctx, q)
+	rows, err := c.pool.Query(ctx, countQ)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	var per []NodeSkew
-	var max, min int64
+	var maxCnt, minCnt int64
+	perMap := map[string]*NodeSkew{}
 	for rows.Next() {
 		var ns NodeSkew
 		if err := rows.Scan(&ns.Node, &ns.Port, &ns.Shards); err != nil {
 			return err
 		}
-		per = append(per, ns)
-		if max == 0 || ns.Shards > max {
-			max = ns.Shards
+		copy := ns
+		per = append(per, copy)
+		perMap[ns.Node+fmt.Sprintf(":%d", ns.Port)] = &per[len(per)-1]
+		if maxCnt == 0 || ns.Shards > maxCnt {
+			maxCnt = ns.Shards
 		}
-		if min == 0 || ns.Shards < min {
-			min = ns.Shards
+		if minCnt == 0 || ns.Shards < minCnt {
+			minCnt = ns.Shards
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	ratio := 1.0
-	if min > 0 {
-		ratio = float64(max) / float64(min)
+	cntRatio := 1.0
+	if minCnt > 0 {
+		cntRatio = float64(maxCnt) / float64(minCnt)
 	}
-	for i := range per {
-		if per[i].Bytes < 0 {
-			per[i].Bytes = 0
+
+	// bytes per node via citus_shards if available
+	bytesRatio := 0.0
+	var maxBytes, minBytes int64
+	var hasBytes bool
+	var ok bool
+	if err := c.pool.QueryRow(ctx, "SELECT to_regclass('pg_catalog.citus_shards') IS NOT NULL").Scan(&ok); err == nil && ok {
+		hasBytes = true
+		bq := `SELECT nodename, nodeport, sum(shard_size) FROM pg_catalog.citus_shards WHERE true GROUP BY nodename, nodeport`
+		brows, err := c.pool.Query(ctx, bq)
+		if err == nil {
+			for brows.Next() {
+				var node string
+				var port int32
+				var bytes int64
+				if err := brows.Scan(&node, &port, &bytes); err != nil {
+					continue
+				}
+				key := node + fmt.Sprintf(":%d", port)
+				if ns, exists := perMap[key]; exists {
+					ns.Bytes = bytes
+					if maxBytes == 0 || bytes > maxBytes {
+						maxBytes = bytes
+					}
+					if minBytes == 0 || bytes < minBytes {
+						minBytes = bytes
+					}
+				}
+			}
+			brows.Close()
 		}
 	}
-	ac.Skew = SkewSnapshot{PerNode: per, Ratio: ratio}
+	if hasBytes && minBytes > 0 {
+		bytesRatio = float64(maxBytes) / float64(minBytes)
+	}
+
+	ac.Skew = SkewSnapshot{PerNode: per, Ratio: cntRatio, BytesRatio: bytesRatio}
+	// collect hot shards per table if view available
+	if ac.HotShardsByTable == nil {
+		ac.HotShardsByTable = map[string][]HotShardInfo{}
+	}
+	var okHS bool
+	if err := c.pool.QueryRow(ctx, "SELECT to_regclass('pg_catalog.citus_shards') IS NOT NULL").Scan(&okHS); err == nil && okHS {
+		rows, err := c.pool.Query(ctx, `SELECT table_name, shardid, nodename, nodeport, shard_size FROM pg_catalog.citus_shards ORDER BY shard_size DESC LIMIT 20`)
+		if err == nil {
+			for rows.Next() {
+				var tbl string
+				var sh HotShardInfo
+				var port int32
+				if err := rows.Scan(&tbl, &sh.ShardID, &sh.Node, &port, &sh.Bytes); err != nil {
+					continue
+				}
+				sh.Table = tbl
+				// annotate node with port
+				sh.Node = fmt.Sprintf("%s:%d", sh.Node, port)
+				ac.HotShardsByTable[tbl] = append(ac.HotShardsByTable[tbl], sh)
+			}
+			rows.Close()
+		}
+	}
 	return nil
 }
 
