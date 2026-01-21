@@ -9,6 +9,7 @@ import (
 	"citus-mcp/internal/db"
 	serr "citus-mcp/internal/errors"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.uber.org/zap"
 )
 
 // ShardHeatmapInput defines input for citus_shard_heatmap.
@@ -179,7 +180,29 @@ func collectShards(ctx context.Context, deps Dependencies, schema, table string)
 				shards = append(shards, r)
 			}
 		} else {
-			warnings = append(warnings, "failed to read citus_shards view")
+			warnings = append(warnings, "failed to read citus_shards view; falling back to placements")
+			deps.Logger.Warn("failed to read citus_shards view", zap.Error(err))
+			// fallback to placements + citus_shard_sizes()
+			placements, err2 := fetchShardPlacements(ctx, deps, schema, table)
+			if err2 != nil {
+				warnings = append(warnings, "failed to fetch shard placements")
+				return shards, warnings
+			}
+			sizes, err3 := fetchShardSizes(ctx, deps)
+			if err3 != nil {
+				warnings = append(warnings, "failed to fetch shard sizes; using shard_count")
+			}
+			for _, p := range placements {
+				tbl := ""
+				if schema != "" && table != "" {
+					tbl = schema + "." + table
+				}
+				r := shardRecord{Table: tbl, ShardID: p.ShardID, Host: p.Host, Port: p.Port}
+				if sizes != nil {
+					r.Bytes = sizes[p.ShardID]
+				}
+				shards = append(shards, r)
+			}
 		}
 	} else {
 		// fallback: placements + citus_shard_sizes

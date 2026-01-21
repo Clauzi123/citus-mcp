@@ -123,6 +123,11 @@ func shardSkewReportTool(ctx context.Context, deps Dependencies, input ShardSkew
 		var err error
 		if useCitusShardsView {
 			sz, err = fetchShardSizesFromView(ctx, deps, schema, table)
+			if err != nil {
+				// fallback to function if view failed
+				deps.Logger.Warn("citus_shards view failed, falling back to citus_shard_sizes()", zap.Error(err))
+				sz, err = fetchShardSizes(ctx, deps)
+			}
 		} else {
 			sz, err = fetchShardSizes(ctx, deps)
 		}
@@ -232,7 +237,7 @@ WHERE ($1 = '' OR (ns.nspname = $1::name AND c.relname = $2::name))
 }
 
 func fetchShardSizes(ctx context.Context, deps Dependencies) (map[int64]int64, error) {
-	q := `SELECT shardid, shard_size FROM citus_shard_sizes()`
+	q := `SELECT shard_id, size FROM citus_shard_sizes()`
 	rows, err := deps.Pool.Query(ctx, q)
 	if err != nil {
 		return nil, err
