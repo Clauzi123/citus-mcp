@@ -61,6 +61,10 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus.list_distributed_tables", Description: "list distributed tables (paginated)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ListDistributedTablesV2Input) (*mcp.CallToolResult, ListDistributedTablesV2Output, error) {
 		return listDistributedTablesV2(ctx, deps, input)
 	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus.explain_query", Description: "EXPLAIN a query (optionally ANALYZE)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ExplainQueryInput) (*mcp.CallToolResult, ExplainQueryOutput, error) {
+		return explainQueryTool(ctx, deps, input)
+	})
 }
 
 // Ping tool
