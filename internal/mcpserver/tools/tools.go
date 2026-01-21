@@ -111,12 +111,8 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 		return requestApprovalTokenTool(ctx, deps, input)
 	})
 
-	// Advisor (register underscore name for MCP compatibility)
+	// Advisor
 	mcp.AddTool(server, &mcp.Tool{Name: "citus_advisor", Description: "Citus SRE + Query Performance Advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input CitusAdvisorInput) (*mcp.CallToolResult, advisorpkg.Output, error) {
-		return citusAdvisorTool(ctx, deps, input)
-	})
-	// Optional alias (may be rejected by some clients due to dot)
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.advisor", Description: "Citus SRE + Query Performance Advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input CitusAdvisorInput) (*mcp.CallToolResult, advisorpkg.Output, error) {
 		return citusAdvisorTool(ctx, deps, input)
 	})
 
@@ -124,9 +120,13 @@ func RegisterAll(server *mcp.Server, deps Dependencies) {
 	mcp.AddTool(server, &mcp.Tool{Name: "citus_shard_heatmap", Description: "Shard heatmap & hot shard advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardHeatmapInput) (*mcp.CallToolResult, ShardHeatmapOutput, error) {
 		return shardHeatmapTool(ctx, deps, input)
 	})
-	// Optional alias
-	mcp.AddTool(server, &mcp.Tool{Name: "citus.shard_heatmap", Description: "Shard heatmap & hot shard advisor (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input ShardHeatmapInput) (*mcp.CallToolResult, ShardHeatmapOutput, error) {
-		return shardHeatmapTool(ctx, deps, input)
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_table_inspector", Description: "Inspect distributed/reference table metadata"}, func(ctx context.Context, req *mcp.CallToolRequest, input TableInspectorInput) (*mcp.CallToolResult, TableInspectorOutput, error) {
+		return tableInspectorTool(ctx, deps, input)
+	})
+
+	mcp.AddTool(server, &mcp.Tool{Name: "citus_lock_inspector", Description: "Inspect cluster lock waits and locks (read-only)"}, func(ctx context.Context, req *mcp.CallToolRequest, input LockInspectorInput) (*mcp.CallToolResult, LockInspectorOutput, error) {
+		return citusLockInspectorTool(ctx, deps, input)
 	})
 }
 

@@ -15,6 +15,7 @@ func RegisterAll(server *mcp.Server, deps tools.Dependencies) {
 	server.AddPrompt(&mcp.Prompt{Name: "/citus.health_check", Title: "Citus health check", Description: "Checklist with cluster summary and worker health"}, promptHealthCheck(deps))
 	server.AddPrompt(&mcp.Prompt{Name: "/citus.rebalance_workflow", Title: "Citus rebalance workflow", Description: "Step-by-step rebalance guidance"}, promptRebalanceWorkflow(deps))
 	server.AddPrompt(&mcp.Prompt{Name: "/citus.skew_investigation", Title: "Citus skew investigation", Description: "Investigate shard/table skew"}, promptSkewInvestigation(deps))
+	server.AddPrompt(&mcp.Prompt{Name: "/citus.ops_triage", Title: "Citus ops triage", Description: "Operational health triage (long-running queries, lock waits, jobs, tenants)"}, promptOpsTriage(deps))
 }
 
 func promptHealthCheck(deps tools.Dependencies) mcp.PromptHandler {
@@ -122,5 +123,45 @@ func promptSkewInvestigation(deps tools.Dependencies) mcp.PromptHandler {
 			{Role: mcp.Role("assistant"), Content: &mcp.TextContent{Text: b.String()}},
 		}
 		return &mcp.GetPromptResult{Description: "Citus skew investigation", Messages: messages}, nil
+	}
+}
+
+func promptOpsTriage(deps tools.Dependencies) mcp.PromptHandler {
+	return func(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		input := tools.CitusAdvisorInput{Focus: "ops", MaxFindings: 10, IncludeNextSteps: true}
+		_, out, err := tools.CitusAdvisor(ctx, deps, input)
+		if err != nil {
+			msg := "### 🛠️ Citus Ops Triage\n- Run `citus_advisor {\"focus\":\"ops\"}`\n- If errors persist, check extension availability and permissions."
+			messages := []*mcp.PromptMessage{{Role: mcp.Role("assistant"), Content: &mcp.TextContent{Text: msg}}}
+			return &mcp.GetPromptResult{Description: "Citus ops triage (fallback)", Messages: messages}, nil
+		}
+
+		var b strings.Builder
+		b.WriteString("### 🛠️ Citus Ops Triage\n")
+		if len(out.Findings) == 0 {
+			b.WriteString("No operational issues detected.\n")
+		} else {
+			b.WriteString("Findings (top):\n")
+			for i, f := range out.Findings {
+				if i >= 5 {
+					break
+				}
+				b.WriteString(fmt.Sprintf("- [%s] **%s** — %s (target: %s)\n", strings.ToUpper(f.Severity), f.Title, f.Recommendation, f.Target))
+				if len(f.NextSteps) > 0 {
+					b.WriteString("  Next: ")
+					for j, n := range f.NextSteps {
+						if j > 0 {
+							b.WriteString(", ")
+						}
+						b.WriteString(n.Tool)
+					}
+					b.WriteString("\n")
+				}
+			}
+			b.WriteString("\nRun for full details: `citus_advisor {\"focus\":\"ops\", \"include_next_steps\": true}`\n")
+		}
+
+		messages := []*mcp.PromptMessage{{Role: mcp.Role("assistant"), Content: &mcp.TextContent{Text: b.String()}}}
+		return &mcp.GetPromptResult{Description: "Citus ops triage", Messages: messages}, nil
 	}
 }

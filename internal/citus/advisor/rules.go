@@ -27,6 +27,10 @@ func EvaluateRules(ctx *AdvisorContext) []Finding {
 		&RuleNonColocatedJoins{},
 		&RuleStatsStale{},
 		&RuleMissingDistKeyIndex{},
+		&RuleLongRunningQueries{},
+		&RuleLockWaits{},
+		&RuleFailingJobs{},
+		&RuleTenantHotspots{},
 	}
 	focus := ctx.Focus
 	var findings []Finding
@@ -360,4 +364,160 @@ func (r *RuleMissingDistKeyIndex) Evaluate(ctx *AdvisorContext) []Finding {
 		}
 	}
 	return findings
+}
+
+// RuleLongRunningQueries surfaces long-running queries.
+type RuleLongRunningQueries struct{}
+
+func (r *RuleLongRunningQueries) ID() string       { return "rule.ops.long_running_queries" }
+func (r *RuleLongRunningQueries) Category() string { return "ops" }
+func (r *RuleLongRunningQueries) Evaluate(ctx *AdvisorContext) []Finding {
+	act := ctx.Ops.Activity
+	if len(act) == 0 {
+		return nil
+	}
+	threshold := 60.0 // seconds
+	var long []ActivityRow
+	for _, a := range act {
+		if a.AgeSeconds >= threshold {
+			long = append(long, a)
+		}
+	}
+	if len(long) == 0 {
+		return nil
+	}
+	sev := "warning"
+	for _, a := range long {
+		if a.AgeSeconds >= 300 {
+			sev = "critical"
+			break
+		}
+	}
+	evidence := Evidence{"count": len(long), "top": summarizeActivity(long, 5)}
+	next := []NextStep{{Tool: "citus_lock_inspector"}}
+	return []Finding{MakeFinding(r.ID(), sev, r.Category(), "cluster", "queries", "Long running queries detected", fmt.Sprintf("%d queries >60s", len(long)), "Resource contention and lock buildup", "Investigate and optimize or terminate long-running queries", evidence, nil, next)}
+}
+
+// RuleLockWaits surfaces lock waits.
+type RuleLockWaits struct{}
+
+func (r *RuleLockWaits) ID() string       { return "rule.ops.lock_waits" }
+func (r *RuleLockWaits) Category() string { return "ops" }
+func (r *RuleLockWaits) Evaluate(ctx *AdvisorContext) []Finding {
+	waits := ctx.Ops.LockWaits
+	if len(waits) == 0 {
+		return nil
+	}
+	evidence := Evidence{"count": len(waits), "top": summarizeLockWaits(waits, 5)}
+	next := []NextStep{{Tool: "citus_lock_inspector"}}
+	return []Finding{MakeFinding(r.ID(), "warning", r.Category(), "cluster", "locks", "Lock waits detected", fmt.Sprintf("%d lock waits", len(waits)), "Queries are blocked", "Identify blockers and resolve contention", evidence, nil, next)}
+}
+
+// RuleFailingJobs surfaces failing or unfinished background jobs.
+type RuleFailingJobs struct{}
+
+func (r *RuleFailingJobs) ID() string       { return "rule.ops.failing_jobs" }
+func (r *RuleFailingJobs) Category() string { return "ops" }
+func (r *RuleFailingJobs) Evaluate(ctx *AdvisorContext) []Finding {
+	jobs := ctx.Ops.BackgroundJobs
+	if len(jobs) == 0 {
+		return nil
+	}
+	sev := "warning"
+	for _, j := range jobs {
+		if j.State == "failed" {
+			sev = "critical"
+			break
+		}
+	}
+	evidence := Evidence{"count": len(jobs), "top": summarizeJobs(jobs, 5)}
+	return []Finding{MakeFinding(r.ID(), sev, r.Category(), "cluster", "jobs", "Background jobs require attention", "Jobs not finished or failed", "Maintenance or rebalance jobs may be stuck", "Investigate pg_dist_background_job tasks", evidence, nil, nil)}
+}
+
+// RuleTenantHotspots surfaces tenant hotspots by CPU usage.
+type RuleTenantHotspots struct{}
+
+func (r *RuleTenantHotspots) ID() string       { return "rule.ops.tenant_hotspots" }
+func (r *RuleTenantHotspots) Category() string { return "ops" }
+func (r *RuleTenantHotspots) Evaluate(ctx *AdvisorContext) []Finding {
+	stats := ctx.Ops.TenantStats
+	if len(stats) == 0 {
+		return nil
+	}
+	totalCPU := 0.0
+	for _, s := range stats {
+		totalCPU += s.CPUUsage
+	}
+	if totalCPU <= 0 {
+		return nil
+	}
+	top := stats[0]
+	ratio := top.CPUUsage / totalCPU
+	if ratio < 0.5 {
+		return nil
+	}
+	sev := "warning"
+	if ratio >= 0.8 {
+		sev = "critical"
+	}
+	evidence := Evidence{"top": top, "ratio": ratio, "total_cpu": totalCPU}
+	next := []NextStep{{Tool: "citus_shard_heatmap"}}
+	return []Finding{MakeFinding(r.ID(), sev, r.Category(), "cluster", "tenants", "Tenant hotspot detected", fmt.Sprintf("Tenant uses %.0f%% CPU", ratio*100), "Tenant may degrade multi-tenant QoS", "Consider tenant isolation or rebalancing", evidence, nil, next)}
+}
+
+// helpers
+func summarizeActivity(rows []ActivityRow, n int) []map[string]interface{} {
+	res := []map[string]interface{}{}
+	for i, a := range rows {
+		if i >= n {
+			break
+		}
+		res = append(res, map[string]interface{}{
+			"nodeid":      a.NodeID,
+			"age_seconds": a.AgeSeconds,
+			"state":       a.State,
+			"wait_event":  a.WaitEvent,
+			"query":       truncate(a.Query, 200),
+		})
+	}
+	return res
+}
+
+func summarizeLockWaits(rows []LockWaitRow, n int) []map[string]interface{} {
+	res := []map[string]interface{}{}
+	for i, w := range rows {
+		if i >= n {
+			break
+		}
+		res = append(res, map[string]interface{}{
+			"waiting_gpid":  w.WaitingGPID,
+			"blocking_gpid": w.BlockingGPID,
+			"blocked":       truncate(w.BlockedStatement, 120),
+			"blocking":      truncate(w.BlockingStatement, 120),
+		})
+	}
+	return res
+}
+
+func summarizeJobs(rows []BackgroundJobRow, n int) []map[string]interface{} {
+	res := []map[string]interface{}{}
+	for i, j := range rows {
+		if i >= n {
+			break
+		}
+		res = append(res, map[string]interface{}{
+			"job_id":     j.JobID,
+			"state":      j.State,
+			"job_type":   j.JobType,
+			"started_at": j.StartedAt,
+		})
+	}
+	return res
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n]
 }

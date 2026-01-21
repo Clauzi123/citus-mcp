@@ -22,7 +22,18 @@ An MCP server for Citus (PostgreSQL extension), providing read-heavy tooling wit
 - `citus_move_shard_plan`, `citus_move_shard_execute` (approval)
 - `citus_request_approval_token`
 - `citus_advisor` (Citus SRE + Query Performance Advisor)
+- `citus_advisor` focus=`ops` (Operational health: long-running queries, lock waits, failing jobs, tenant hotspots)
 - `citus_shard_heatmap` (Hot shards & node/table heatmap)
+- `citus_table_inspector` (Table metadata, sizes, stats, indexes)
+- `citus_lock_inspector` (Cluster lock waits & locks)
+
+See `docs/catalog_mapping.md` for catalog → tool coverage and gaps.
+
+## Prompts
+- `/citus.health_check` — checklist + cluster summary
+- `/citus.rebalance_workflow` — step-by-step rebalance guidance
+- `/citus.skew_investigation` — skew investigation playbook
+- `/citus.ops_triage` — ops advisor (long-running queries, lock waits, jobs, tenants)
 ### Advisor
 Run the advisor in Copilot Chat:
 ```
@@ -30,6 +41,11 @@ Run the advisor in Copilot Chat:
 ```
 
 Outputs summary, findings, table rankings, and next steps (read-only).
+
+Ops focus example:
+```
+@citus-mcp citus_advisor {"focus":"ops"}
+```
 
 ### Shard Heatmap
 ```

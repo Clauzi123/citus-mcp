@@ -121,6 +121,7 @@ func Run(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, in Input) (
 	g.Go(func() error { return collector.CollectTables(gctx, ac, in.Schema, in.Table, in.MaxTables) })
 	g.Go(func() error { return collector.CollectSkew(gctx, ac) })
 	g.Go(func() error { return collector.CollectPrereqs(gctx, ac) })
+	g.Go(func() error { return collector.CollectOps(gctx, ac) })
 	if in.AllowQuerySampling {
 		g.Go(func() error { return collector.CollectQuerySamples(gctx, ac) })
 	}
@@ -151,6 +152,64 @@ type AdvisorContext struct {
 	Prereqs          map[string]PrereqOutput
 	Queries          map[string][]QuerySample
 	HotShardsByTable map[string][]HotShardInfo
+
+	Ops OpsSnapshot
+}
+
+// OpsSnapshot captures operational signals across the cluster.
+type OpsSnapshot struct {
+	Activity        []ActivityRow       `json:"activity"`
+	LockWaits       []LockWaitRow       `json:"lock_waits"`
+	BackgroundJobs  []BackgroundJobRow  `json:"background_jobs"`
+	BackgroundTasks []BackgroundTaskRow `json:"background_tasks"`
+	TenantStats     []TenantStatRow     `json:"tenant_stats"`
+	Warnings        []string            `json:"warnings"`
+}
+
+type ActivityRow struct {
+	GlobalPID     int64   `json:"global_pid"`
+	NodeID        int32   `json:"nodeid"`
+	State         string  `json:"state"`
+	WaitEventType string  `json:"wait_event_type"`
+	WaitEvent     string  `json:"wait_event"`
+	AgeSeconds    float64 `json:"age_seconds"`
+	AppName       string  `json:"app_name"`
+	UserName      string  `json:"user_name"`
+	Query         string  `json:"query"`
+}
+
+type LockWaitRow struct {
+	WaitingGPID       int64  `json:"waiting_gpid"`
+	BlockingGPID      int64  `json:"blocking_gpid"`
+	WaitingNodeID     int32  `json:"waiting_nodeid"`
+	BlockingNodeID    int32  `json:"blocking_nodeid"`
+	BlockedStatement  string `json:"blocked_statement"`
+	BlockingStatement string `json:"blocking_statement"`
+}
+
+type BackgroundJobRow struct {
+	JobID       int64   `json:"job_id"`
+	State       string  `json:"state"`
+	JobType     string  `json:"job_type"`
+	Description string  `json:"description"`
+	StartedAt   *string `json:"started_at,omitempty"`
+	FinishedAt  *string `json:"finished_at,omitempty"`
+}
+
+type BackgroundTaskRow struct {
+	JobID   int64  `json:"job_id"`
+	TaskID  int64  `json:"task_id"`
+	Status  string `json:"status"`
+	Command string `json:"command"`
+	Message string `json:"message"`
+}
+
+type TenantStatRow struct {
+	NodeID       int32   `json:"nodeid"`
+	ColocationID int32   `json:"colocation_id"`
+	TenantAttr   string  `json:"tenant_attribute"`
+	QueryCount   int64   `json:"query_count_in_this_period"`
+	CPUUsage     float64 `json:"cpu_usage_in_this_period"`
 }
 
 type QuerySample struct {
@@ -445,6 +504,93 @@ ORDER BY n.nodename, n.nodeport`
 		}
 	}
 	return nil
+}
+
+// CollectOps gathers operational signals (activity, locks, jobs, tenants).
+func (c *Collector) CollectOps(ctx context.Context, ac *AdvisorContext) error {
+	op := OpsSnapshot{}
+	// activity
+	if ok := hasView(ctx, c.pool, "pg_catalog.citus_stat_activity"); ok {
+		q := `SELECT global_pid, nodeid, state, COALESCE(wait_event_type,''), COALESCE(wait_event,''), EXTRACT(EPOCH FROM (now() - query_start)) AS age_s, COALESCE(application_name,''), COALESCE(usename,''), left(query, 2000)
+FROM pg_catalog.citus_stat_activity WHERE state <> 'idle' ORDER BY age_s DESC LIMIT 50`
+		rows, err := c.pool.Query(ctx, q)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var r ActivityRow
+				if err := rows.Scan(&r.GlobalPID, &r.NodeID, &r.State, &r.WaitEventType, &r.WaitEvent, &r.AgeSeconds, &r.AppName, &r.UserName, &r.Query); err != nil {
+					continue
+				}
+				op.Activity = append(op.Activity, r)
+			}
+		}
+	}
+
+	// lock waits
+	if ok := hasView(ctx, c.pool, "pg_catalog.citus_lock_waits"); ok {
+		rows, err := c.pool.Query(ctx, `SELECT waiting_gpid, blocking_gpid, waiting_nodeid, blocking_nodeid, left(blocked_statement,2000), left(current_statement_in_blocking_process,2000) FROM pg_catalog.citus_lock_waits LIMIT 50`)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var w LockWaitRow
+				if err := rows.Scan(&w.WaitingGPID, &w.BlockingGPID, &w.WaitingNodeID, &w.BlockingNodeID, &w.BlockedStatement, &w.BlockingStatement); err != nil {
+					continue
+				}
+				op.LockWaits = append(op.LockWaits, w)
+			}
+		}
+	}
+
+	// background jobs
+	if ok := hasView(ctx, c.pool, "pg_catalog.pg_dist_background_job"); ok {
+		rows, err := c.pool.Query(ctx, `SELECT job_id, state::text, job_type, description, to_char(started_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), to_char(finished_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') FROM pg_catalog.pg_dist_background_job WHERE state IS DISTINCT FROM 'finished' OR finished_at IS NULL ORDER BY started_at DESC NULLS LAST LIMIT 50`)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var j BackgroundJobRow
+				if err := rows.Scan(&j.JobID, &j.State, &j.JobType, &j.Description, &j.StartedAt, &j.FinishedAt); err != nil {
+					continue
+				}
+				op.BackgroundJobs = append(op.BackgroundJobs, j)
+			}
+		}
+		// tasks
+		rows2, err2 := c.pool.Query(ctx, `SELECT job_id, task_id, status::text, left(command, 2000), COALESCE(message,'') FROM pg_catalog.pg_dist_background_task WHERE status IS DISTINCT FROM 'done' ORDER BY job_id, task_id LIMIT 100`)
+		if err2 == nil {
+			defer rows2.Close()
+			for rows2.Next() {
+				var t BackgroundTaskRow
+				if err := rows2.Scan(&t.JobID, &t.TaskID, &t.Status, &t.Command, &t.Message); err != nil {
+					continue
+				}
+				op.BackgroundTasks = append(op.BackgroundTasks, t)
+			}
+		}
+	}
+
+	// tenant stats
+	if ok := hasView(ctx, c.pool, "pg_catalog.citus_stat_tenants"); ok {
+		rows, err := c.pool.Query(ctx, `SELECT nodeid, colocation_id, tenant_attribute, query_count_in_this_period, COALESCE(cpu_usage_in_this_period,0) FROM pg_catalog.citus_stat_tenants ORDER BY cpu_usage_in_this_period DESC NULLS LAST, query_count_in_this_period DESC LIMIT 50`)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var t TenantStatRow
+				if err := rows.Scan(&t.NodeID, &t.ColocationID, &t.TenantAttr, &t.QueryCount, &t.CPUUsage); err != nil {
+					continue
+				}
+				op.TenantStats = append(op.TenantStats, t)
+			}
+		}
+	}
+
+	ac.Ops = op
+	return nil
+}
+
+func hasView(ctx context.Context, pool *pgxpool.Pool, name string) bool {
+	var ok bool
+	_ = pool.QueryRow(ctx, `SELECT to_regclass($1) IS NOT NULL`, name).Scan(&ok)
+	return ok
 }
 
 // CollectPrereqs runs validate_rebalance_prereqs for tables.

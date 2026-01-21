@@ -11,7 +11,7 @@ import (
 
 // CitusAdvisorInput defines input for citus_advisor (alias citus.advisor).
 type CitusAdvisorInput struct {
-	Focus              string `json:"focus,omitempty" enum:"rebalance" enum:"skew" enum:"performance" enum:"metadata" enum:"all"`
+	Focus              string `json:"focus,omitempty" enum:"rebalance" enum:"skew" enum:"performance" enum:"metadata" enum:"ops" enum:"all"`
 	Schema             string `json:"schema,omitempty"`
 	Table              string `json:"table,omitempty"`
 	MaxTables          int    `json:"max_tables,omitempty"`
