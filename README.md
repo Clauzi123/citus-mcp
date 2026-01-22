@@ -35,10 +35,10 @@ Citus MCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 
 ### How It Works
 
 ```
-┌─────────────────┐                       ┌──────────────┐                ┌─────────────────┐
-│  GitHub Copilot │     MCP Protocol      │  citus-mcp   │      SQL       │  Citus Cluster  │
-│  (VS Code/CLI)  │ ◄──────────────────► │    server    │ ◄────────────► │  (Coordinator)  │
-└─────────────────┘      stdio/SSE        └──────────────┘                └─────────────────┘
+┌─────────────────┐                      ┌──────────────┐                ┌─────────────────┐
+│  GitHub Copilot │     MCP Protocol     │  citus-mcp   │      SQL       │  Citus Cluster  │
+│  (VS Code/CLI)  │ <──────────────────> │    server    │ <────────────> │  (Coordinator)  │
+└─────────────────┘      stdio/SSE       └──────────────┘                └─────────────────┘
 ```
 
 ---
