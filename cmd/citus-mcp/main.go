@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"citus-mcp/internal/config"
 	"citus-mcp/internal/logging"
@@ -76,33 +75,14 @@ func runSSE(ctx context.Context, srv *mcpserver.Server, cfg config.Config, logge
 		zap.String("endpoint", endpoint),
 	)
 
-	// Create HTTP handler for SSE
+	// Use SDK's SSEHandler which properly manages sessions
+	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+		return srv.MCP()
+	}, nil)
+
 	mux := http.NewServeMux()
-
-	// SSE endpoint - handles both GET (SSE stream) and POST (messages)
-	mux.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			// New SSE session
-			sessionID := generateSessionID()
-			sessionEndpoint := fmt.Sprintf("%s/session/%s", endpoint, sessionID)
-
-			transport := &mcp.SSEServerTransport{
-				Endpoint: sessionEndpoint,
-				Response: w,
-			}
-
-			// Register session handler for POST messages
-			mux.Handle(sessionEndpoint, transport)
-
-			logger.Info("new SSE session", zap.String("session_id", sessionID))
-
-			if err := srv.Run(r.Context(), transport); err != nil {
-				logger.Error("SSE session error", zap.Error(err), zap.String("session_id", sessionID))
-			}
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	mux.Handle(endpoint, handler)
+	mux.Handle(endpoint+"/", handler) // Handle session sub-paths
 
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +98,9 @@ func runSSE(ctx context.Context, srv *mcpserver.Server, cfg config.Config, logge
 	go func() {
 		<-ctx.Done()
 		logger.Info("shutting down HTTP server")
-		server.Shutdown(context.Background())
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		server.Shutdown(shutdownCtx)
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -138,28 +120,13 @@ func runStreamable(ctx context.Context, srv *mcpserver.Server, cfg config.Config
 		zap.String("endpoint", endpoint),
 	)
 
-	// Create HTTP handler for Streamable transport
+	// Use SDK's StreamableHTTPHandler which properly manages sessions
+	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+		return srv.MCP()
+	}, nil)
+
 	mux := http.NewServeMux()
-
-	// Streamable endpoint
-	mux.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
-		sessionID := generateSessionID()
-
-		transport := &mcp.StreamableServerTransport{
-			SessionID: sessionID,
-		}
-
-		// The transport itself is an HTTP handler
-		// First, connect to establish the session
-		go func() {
-			if err := srv.Run(r.Context(), transport); err != nil {
-				logger.Error("Streamable session error", zap.Error(err), zap.String("session_id", sessionID))
-			}
-		}()
-
-		// Serve the HTTP request through the transport
-		transport.ServeHTTP(w, r)
-	})
+	mux.Handle(endpoint, handler)
 
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -175,17 +142,13 @@ func runStreamable(ctx context.Context, srv *mcpserver.Server, cfg config.Config
 	go func() {
 		<-ctx.Done()
 		logger.Info("shutting down HTTP server")
-		server.Shutdown(context.Background())
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		server.Shutdown(shutdownCtx)
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatal("HTTP server error", zap.Error(err))
 	}
 	logger.Info("server stopped")
-}
-
-func generateSessionID() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return hex.EncodeToString(b)
 }
