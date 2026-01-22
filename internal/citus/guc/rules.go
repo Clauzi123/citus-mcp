@@ -21,20 +21,20 @@ const (
 
 // ConfigFinding represents a configuration issue or recommendation.
 type ConfigFinding struct {
-	ID             string            `json:"id"`
-	Severity       Severity          `json:"severity"`
-	Category       Category          `json:"category"`
-	Title          string            `json:"title"`
-	Problem        string            `json:"problem"`
-	Impact         string            `json:"impact"`
-	Recommendation string            `json:"recommendation"`
-	CurrentValue   string            `json:"current_value"`
-	RecommendedVal string            `json:"recommended_value,omitempty"`
-	FixSQL         string            `json:"fix_sql,omitempty"`
-	Evidence       map[string]any    `json:"evidence,omitempty"`
-	AffectedGUCs   []string          `json:"affected_gucs,omitempty"`
-	RequiresRestart bool             `json:"requires_restart"`
-	DocLink        string            `json:"doc_link,omitempty"`
+	ID              string         `json:"id"`
+	Severity        Severity       `json:"severity"`
+	Category        Category       `json:"category"`
+	Title           string         `json:"title"`
+	Problem         string         `json:"problem"`
+	Impact          string         `json:"impact"`
+	Recommendation  string         `json:"recommendation"`
+	CurrentValue    string         `json:"current_value"`
+	RecommendedVal  string         `json:"recommended_value,omitempty"`
+	FixSQL          string         `json:"fix_sql,omitempty"`
+	Evidence        map[string]any `json:"evidence,omitempty"`
+	AffectedGUCs    []string       `json:"affected_gucs,omitempty"`
+	RequiresRestart bool           `json:"requires_restart"`
+	DocLink         string         `json:"doc_link,omitempty"`
 }
 
 // Rule defines a configuration analysis rule.
@@ -46,11 +46,11 @@ type Rule interface {
 
 // AnalysisContext holds all data needed for rule evaluation.
 type AnalysisContext struct {
-	CitusGUCs    map[string]GUCValue
-	PostgresGUCs map[string]GUCValue
-	AllGUCs      map[string]GUCValue
-	WorkerCount  int
-	ShardCount   int
+	CitusGUCs     map[string]GUCValue
+	PostgresGUCs  map[string]GUCValue
+	AllGUCs       map[string]GUCValue
+	WorkerCount   int
+	ShardCount    int
 	TotalRAMBytes int64
 	IsCoordinator bool
 }
@@ -158,7 +158,7 @@ func (ctx *AnalysisContext) GetGUCBytes(name string) (int64, bool) {
 // RuleWalLevel checks wal_level is set to logical for Citus operations.
 type RuleWalLevel struct{}
 
-func (r *RuleWalLevel) ID() string       { return "rule.config.wal_level" }
+func (r *RuleWalLevel) ID() string         { return "rule.config.wal_level" }
 func (r *RuleWalLevel) Category() Category { return CategoryReplication }
 func (r *RuleWalLevel) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	g, ok := ctx.GetGUC("wal_level")
@@ -167,19 +167,19 @@ func (r *RuleWalLevel) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	}
 	if strings.ToLower(g.Setting) != "logical" {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityCritical,
-			Category:       r.Category(),
-			Title:          "wal_level must be 'logical' for Citus",
-			Problem:        fmt.Sprintf("wal_level is '%s', but Citus requires 'logical' for shard moves and rebalancing", g.Setting),
-			Impact:         "Shard moves, rebalancing, and online schema changes will fail. Cluster cannot be safely modified.",
-			Recommendation: "Set wal_level = 'logical' in postgresql.conf and restart PostgreSQL",
-			CurrentValue:   g.Setting,
-			RecommendedVal: "logical",
-			FixSQL:         "ALTER SYSTEM SET wal_level = 'logical'; -- Requires restart",
+			ID:              r.ID(),
+			Severity:        SeverityCritical,
+			Category:        r.Category(),
+			Title:           "wal_level must be 'logical' for Citus",
+			Problem:         fmt.Sprintf("wal_level is '%s', but Citus requires 'logical' for shard moves and rebalancing", g.Setting),
+			Impact:          "Shard moves, rebalancing, and online schema changes will fail. Cluster cannot be safely modified.",
+			Recommendation:  "Set wal_level = 'logical' in postgresql.conf and restart PostgreSQL",
+			CurrentValue:    g.Setting,
+			RecommendedVal:  "logical",
+			FixSQL:          "ALTER SYSTEM SET wal_level = 'logical'; -- Requires restart",
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"wal_level"},
-			DocLink:        "https://docs.citusdata.com/en/stable/admin_guide/cluster_management.html",
+			AffectedGUCs:    []string{"wal_level"},
+			DocLink:         "https://docs.citusdata.com/en/stable/admin_guide/cluster_management.html",
 		}}
 	}
 	return nil
@@ -188,7 +188,7 @@ func (r *RuleWalLevel) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleSharedPreloadLibraries checks citus is in shared_preload_libraries.
 type RuleSharedPreloadLibraries struct{}
 
-func (r *RuleSharedPreloadLibraries) ID() string       { return "rule.config.shared_preload_libraries" }
+func (r *RuleSharedPreloadLibraries) ID() string         { return "rule.config.shared_preload_libraries" }
 func (r *RuleSharedPreloadLibraries) Category() Category { return CategoryOperations }
 func (r *RuleSharedPreloadLibraries) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	g, ok := ctx.GetGUC("shared_preload_libraries")
@@ -198,18 +198,18 @@ func (r *RuleSharedPreloadLibraries) Evaluate(ctx *AnalysisContext) []ConfigFind
 	libs := strings.ToLower(g.Setting)
 	if !strings.Contains(libs, "citus") {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityCritical,
-			Category:       r.Category(),
-			Title:          "'citus' missing from shared_preload_libraries",
-			Problem:        fmt.Sprintf("shared_preload_libraries='%s' does not include 'citus'", g.Setting),
-			Impact:         "Citus extension cannot function properly without being preloaded.",
-			Recommendation: "Add 'citus' to shared_preload_libraries and restart PostgreSQL",
-			CurrentValue:   g.Setting,
-			RecommendedVal: "citus",
-			FixSQL:         "ALTER SYSTEM SET shared_preload_libraries = 'citus'; -- Requires restart",
+			ID:              r.ID(),
+			Severity:        SeverityCritical,
+			Category:        r.Category(),
+			Title:           "'citus' missing from shared_preload_libraries",
+			Problem:         fmt.Sprintf("shared_preload_libraries='%s' does not include 'citus'", g.Setting),
+			Impact:          "Citus extension cannot function properly without being preloaded.",
+			Recommendation:  "Add 'citus' to shared_preload_libraries and restart PostgreSQL",
+			CurrentValue:    g.Setting,
+			RecommendedVal:  "citus",
+			FixSQL:          "ALTER SYSTEM SET shared_preload_libraries = 'citus'; -- Requires restart",
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"shared_preload_libraries"},
+			AffectedGUCs:    []string{"shared_preload_libraries"},
 		}}
 	}
 	return nil
@@ -218,7 +218,7 @@ func (r *RuleSharedPreloadLibraries) Evaluate(ctx *AnalysisContext) []ConfigFind
 // RuleMaxWorkerProcesses checks worker processes are sufficient.
 type RuleMaxWorkerProcesses struct{}
 
-func (r *RuleMaxWorkerProcesses) ID() string       { return "rule.config.max_worker_processes" }
+func (r *RuleMaxWorkerProcesses) ID() string         { return "rule.config.max_worker_processes" }
 func (r *RuleMaxWorkerProcesses) Category() Category { return CategoryParallelism }
 func (r *RuleMaxWorkerProcesses) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	maxWorkers, ok := ctx.GetGUCInt("max_worker_processes")
@@ -239,19 +239,19 @@ func (r *RuleMaxWorkerProcesses) Evaluate(ctx *AnalysisContext) []ConfigFinding 
 			severity = SeverityCritical
 		}
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       severity,
-			Category:       r.Category(),
-			Title:          "max_worker_processes may be too low for Citus",
-			Problem:        fmt.Sprintf("max_worker_processes=%d is below recommended %d for a %d-worker cluster", maxWorkers, minRequired, ctx.WorkerCount),
-			Impact:         "Background maintenance, shard rebalancing, and parallel queries may be limited or fail.",
-			Recommendation: fmt.Sprintf("Set max_worker_processes >= %d", minRequired),
-			CurrentValue:   fmt.Sprintf("%d", maxWorkers),
-			RecommendedVal: fmt.Sprintf("%d", minRequired),
-			FixSQL:         fmt.Sprintf("ALTER SYSTEM SET max_worker_processes = %d; -- Requires restart", minRequired),
+			ID:              r.ID(),
+			Severity:        severity,
+			Category:        r.Category(),
+			Title:           "max_worker_processes may be too low for Citus",
+			Problem:         fmt.Sprintf("max_worker_processes=%d is below recommended %d for a %d-worker cluster", maxWorkers, minRequired, ctx.WorkerCount),
+			Impact:          "Background maintenance, shard rebalancing, and parallel queries may be limited or fail.",
+			Recommendation:  fmt.Sprintf("Set max_worker_processes >= %d", minRequired),
+			CurrentValue:    fmt.Sprintf("%d", maxWorkers),
+			RecommendedVal:  fmt.Sprintf("%d", minRequired),
+			FixSQL:          fmt.Sprintf("ALTER SYSTEM SET max_worker_processes = %d; -- Requires restart", minRequired),
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"max_worker_processes"},
-			Evidence:       map[string]any{"worker_count": ctx.WorkerCount, "min_required": minRequired},
+			AffectedGUCs:    []string{"max_worker_processes"},
+			Evidence:        map[string]any{"worker_count": ctx.WorkerCount, "min_required": minRequired},
 		}}
 	}
 	return nil
@@ -260,7 +260,7 @@ func (r *RuleMaxWorkerProcesses) Evaluate(ctx *AnalysisContext) []ConfigFinding 
 // RuleMaxReplicationSlots checks replication slots are sufficient.
 type RuleMaxReplicationSlots struct{}
 
-func (r *RuleMaxReplicationSlots) ID() string       { return "rule.config.max_replication_slots" }
+func (r *RuleMaxReplicationSlots) ID() string         { return "rule.config.max_replication_slots" }
 func (r *RuleMaxReplicationSlots) Category() Category { return CategoryReplication }
 func (r *RuleMaxReplicationSlots) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	slots, ok := ctx.GetGUCInt("max_replication_slots")
@@ -281,18 +281,18 @@ func (r *RuleMaxReplicationSlots) Evaluate(ctx *AnalysisContext) []ConfigFinding
 
 	if slots < minRequired {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityWarning,
-			Category:       r.Category(),
-			Title:          "max_replication_slots may limit shard operations",
-			Problem:        fmt.Sprintf("max_replication_slots=%d, recommend at least %d for parallel shard moves", slots, minRequired),
-			Impact:         "Concurrent shard moves during rebalancing may be limited.",
-			Recommendation: fmt.Sprintf("Set max_replication_slots >= %d", minRequired),
-			CurrentValue:   fmt.Sprintf("%d", slots),
-			RecommendedVal: fmt.Sprintf("%d", minRequired),
-			FixSQL:         fmt.Sprintf("ALTER SYSTEM SET max_replication_slots = %d; -- Requires restart", minRequired),
+			ID:              r.ID(),
+			Severity:        SeverityWarning,
+			Category:        r.Category(),
+			Title:           "max_replication_slots may limit shard operations",
+			Problem:         fmt.Sprintf("max_replication_slots=%d, recommend at least %d for parallel shard moves", slots, minRequired),
+			Impact:          "Concurrent shard moves during rebalancing may be limited.",
+			Recommendation:  fmt.Sprintf("Set max_replication_slots >= %d", minRequired),
+			CurrentValue:    fmt.Sprintf("%d", slots),
+			RecommendedVal:  fmt.Sprintf("%d", minRequired),
+			FixSQL:          fmt.Sprintf("ALTER SYSTEM SET max_replication_slots = %d; -- Requires restart", minRequired),
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"max_replication_slots"},
+			AffectedGUCs:    []string{"max_replication_slots"},
 		}}
 	}
 	return nil
@@ -301,7 +301,7 @@ func (r *RuleMaxReplicationSlots) Evaluate(ctx *AnalysisContext) []ConfigFinding
 // RuleMaxWalSenders checks WAL senders are sufficient.
 type RuleMaxWalSenders struct{}
 
-func (r *RuleMaxWalSenders) ID() string       { return "rule.config.max_wal_senders" }
+func (r *RuleMaxWalSenders) ID() string         { return "rule.config.max_wal_senders" }
 func (r *RuleMaxWalSenders) Category() Category { return CategoryReplication }
 func (r *RuleMaxWalSenders) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	senders, ok := ctx.GetGUCInt("max_wal_senders")
@@ -316,18 +316,18 @@ func (r *RuleMaxWalSenders) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 
 	if senders < minRequired {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityWarning,
-			Category:       r.Category(),
-			Title:          "max_wal_senders may limit replication",
-			Problem:        fmt.Sprintf("max_wal_senders=%d, recommend at least %d", senders, minRequired),
-			Impact:         "Logical replication for shard moves may be limited.",
-			Recommendation: fmt.Sprintf("Set max_wal_senders >= %d", minRequired),
-			CurrentValue:   fmt.Sprintf("%d", senders),
-			RecommendedVal: fmt.Sprintf("%d", minRequired),
-			FixSQL:         fmt.Sprintf("ALTER SYSTEM SET max_wal_senders = %d; -- Requires restart", minRequired),
+			ID:              r.ID(),
+			Severity:        SeverityWarning,
+			Category:        r.Category(),
+			Title:           "max_wal_senders may limit replication",
+			Problem:         fmt.Sprintf("max_wal_senders=%d, recommend at least %d", senders, minRequired),
+			Impact:          "Logical replication for shard moves may be limited.",
+			Recommendation:  fmt.Sprintf("Set max_wal_senders >= %d", minRequired),
+			CurrentValue:    fmt.Sprintf("%d", senders),
+			RecommendedVal:  fmt.Sprintf("%d", minRequired),
+			FixSQL:          fmt.Sprintf("ALTER SYSTEM SET max_wal_senders = %d; -- Requires restart", minRequired),
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"max_wal_senders"},
+			AffectedGUCs:    []string{"max_wal_senders"},
 		}}
 	}
 	return nil
@@ -340,7 +340,7 @@ func (r *RuleMaxWalSenders) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleSharedBuffers analyzes shared_buffers setting.
 type RuleSharedBuffers struct{}
 
-func (r *RuleSharedBuffers) ID() string       { return "rule.config.shared_buffers" }
+func (r *RuleSharedBuffers) ID() string         { return "rule.config.shared_buffers" }
 func (r *RuleSharedBuffers) Category() Category { return CategoryMemory }
 func (r *RuleSharedBuffers) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	bytes, ok := ctx.GetGUCBytes("shared_buffers")
@@ -352,18 +352,18 @@ func (r *RuleSharedBuffers) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	minBytes := int64(256 * 1024 * 1024)
 	if bytes < minBytes {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityWarning,
-			Category:       r.Category(),
-			Title:          "shared_buffers is below recommended minimum",
-			Problem:        fmt.Sprintf("shared_buffers=%s is below recommended 256MB minimum", FormatBytes(bytes)),
-			Impact:         "Insufficient buffer cache leads to excessive disk I/O and poor query performance.",
-			Recommendation: "Set shared_buffers to 15-25% of available RAM, minimum 256MB",
-			CurrentValue:   FormatBytes(bytes),
-			RecommendedVal: "256MB - 25% of RAM",
-			FixSQL:         "ALTER SYSTEM SET shared_buffers = '1GB'; -- Adjust based on RAM, requires restart",
+			ID:              r.ID(),
+			Severity:        SeverityWarning,
+			Category:        r.Category(),
+			Title:           "shared_buffers is below recommended minimum",
+			Problem:         fmt.Sprintf("shared_buffers=%s is below recommended 256MB minimum", FormatBytes(bytes)),
+			Impact:          "Insufficient buffer cache leads to excessive disk I/O and poor query performance.",
+			Recommendation:  "Set shared_buffers to 15-25% of available RAM, minimum 256MB",
+			CurrentValue:    FormatBytes(bytes),
+			RecommendedVal:  "256MB - 25% of RAM",
+			FixSQL:          "ALTER SYSTEM SET shared_buffers = '1GB'; -- Adjust based on RAM, requires restart",
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"shared_buffers"},
+			AffectedGUCs:    []string{"shared_buffers"},
 		}}
 	}
 
@@ -372,18 +372,18 @@ func (r *RuleSharedBuffers) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 		maxRecommended := ctx.TotalRAMBytes / 4 // 25%
 		if bytes > maxRecommended {
 			return []ConfigFinding{{
-				ID:             r.ID(),
-				Severity:       SeverityWarning,
-				Category:       r.Category(),
-				Title:          "shared_buffers may be too high",
-				Problem:        fmt.Sprintf("shared_buffers=%s exceeds 25%% of RAM (%s)", FormatBytes(bytes), FormatBytes(ctx.TotalRAMBytes)),
-				Impact:         "Excessive shared_buffers can starve OS file system cache, reducing overall performance.",
-				Recommendation: "Set shared_buffers to 15-25% of available RAM",
-				CurrentValue:   FormatBytes(bytes),
-				RecommendedVal: FormatBytes(maxRecommended),
-				FixSQL:         fmt.Sprintf("ALTER SYSTEM SET shared_buffers = '%s'; -- Requires restart", FormatBytes(maxRecommended)),
+				ID:              r.ID(),
+				Severity:        SeverityWarning,
+				Category:        r.Category(),
+				Title:           "shared_buffers may be too high",
+				Problem:         fmt.Sprintf("shared_buffers=%s exceeds 25%% of RAM (%s)", FormatBytes(bytes), FormatBytes(ctx.TotalRAMBytes)),
+				Impact:          "Excessive shared_buffers can starve OS file system cache, reducing overall performance.",
+				Recommendation:  "Set shared_buffers to 15-25% of available RAM",
+				CurrentValue:    FormatBytes(bytes),
+				RecommendedVal:  FormatBytes(maxRecommended),
+				FixSQL:          fmt.Sprintf("ALTER SYSTEM SET shared_buffers = '%s'; -- Requires restart", FormatBytes(maxRecommended)),
 				RequiresRestart: true,
-				AffectedGUCs:   []string{"shared_buffers"},
+				AffectedGUCs:    []string{"shared_buffers"},
 			}}
 		}
 	}
@@ -393,7 +393,7 @@ func (r *RuleSharedBuffers) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleWorkMem analyzes work_mem setting.
 type RuleWorkMem struct{}
 
-func (r *RuleWorkMem) ID() string       { return "rule.config.work_mem" }
+func (r *RuleWorkMem) ID() string         { return "rule.config.work_mem" }
 func (r *RuleWorkMem) Category() Category { return CategoryMemory }
 func (r *RuleWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	bytes, ok := ctx.GetGUCBytes("work_mem")
@@ -405,18 +405,18 @@ func (r *RuleWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	minBytes := int64(4 * 1024 * 1024)
 	if bytes < minBytes {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "work_mem is at default value",
-			Problem:        fmt.Sprintf("work_mem=%s is at PostgreSQL default", FormatBytes(bytes)),
-			Impact:         "Complex sorts and hash joins may spill to disk, reducing performance.",
-			Recommendation: "Consider increasing work_mem to 16-64MB for distributed query workloads",
-			CurrentValue:   FormatBytes(bytes),
-			RecommendedVal: "16MB - 64MB",
-			FixSQL:         "ALTER SYSTEM SET work_mem = '32MB';",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "work_mem is at default value",
+			Problem:         fmt.Sprintf("work_mem=%s is at PostgreSQL default", FormatBytes(bytes)),
+			Impact:          "Complex sorts and hash joins may spill to disk, reducing performance.",
+			Recommendation:  "Consider increasing work_mem to 16-64MB for distributed query workloads",
+			CurrentValue:    FormatBytes(bytes),
+			RecommendedVal:  "16MB - 64MB",
+			FixSQL:          "ALTER SYSTEM SET work_mem = '32MB';",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"work_mem"},
+			AffectedGUCs:    []string{"work_mem"},
 		}}
 	}
 
@@ -426,19 +426,19 @@ func (r *RuleWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 		potentialUsage := bytes * maxConns * 4 // 4 ops per connection worst case
 		if ctx.TotalRAMBytes > 0 && potentialUsage > ctx.TotalRAMBytes {
 			return []ConfigFinding{{
-				ID:             r.ID(),
-				Severity:       SeverityCritical,
-				Category:       r.Category(),
-				Title:          "work_mem * max_connections risks OOM",
-				Problem:        fmt.Sprintf("work_mem=%s with max_connections=%d could use up to %s per query", FormatBytes(bytes), maxConns, FormatBytes(potentialUsage)),
-				Impact:         "Risk of out-of-memory errors under load.",
-				Recommendation: "Reduce work_mem or max_connections to prevent OOM",
-				CurrentValue:   FormatBytes(bytes),
-				RecommendedVal: "16MB - 64MB",
-				FixSQL:         "ALTER SYSTEM SET work_mem = '64MB';",
+				ID:              r.ID(),
+				Severity:        SeverityCritical,
+				Category:        r.Category(),
+				Title:           "work_mem * max_connections risks OOM",
+				Problem:         fmt.Sprintf("work_mem=%s with max_connections=%d could use up to %s per query", FormatBytes(bytes), maxConns, FormatBytes(potentialUsage)),
+				Impact:          "Risk of out-of-memory errors under load.",
+				Recommendation:  "Reduce work_mem or max_connections to prevent OOM",
+				CurrentValue:    FormatBytes(bytes),
+				RecommendedVal:  "16MB - 64MB",
+				FixSQL:          "ALTER SYSTEM SET work_mem = '64MB';",
 				RequiresRestart: false,
-				AffectedGUCs:   []string{"work_mem", "max_connections"},
-				Evidence:       map[string]any{"max_connections": maxConns, "potential_usage": FormatBytes(potentialUsage)},
+				AffectedGUCs:    []string{"work_mem", "max_connections"},
+				Evidence:        map[string]any{"max_connections": maxConns, "potential_usage": FormatBytes(potentialUsage)},
 			}}
 		}
 	}
@@ -448,7 +448,7 @@ func (r *RuleWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleMaintenanceWorkMem analyzes maintenance_work_mem.
 type RuleMaintenanceWorkMem struct{}
 
-func (r *RuleMaintenanceWorkMem) ID() string       { return "rule.config.maintenance_work_mem" }
+func (r *RuleMaintenanceWorkMem) ID() string         { return "rule.config.maintenance_work_mem" }
 func (r *RuleMaintenanceWorkMem) Category() Category { return CategoryMemory }
 func (r *RuleMaintenanceWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	bytes, ok := ctx.GetGUCBytes("maintenance_work_mem")
@@ -459,18 +459,18 @@ func (r *RuleMaintenanceWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding 
 	minBytes := int64(256 * 1024 * 1024) // 256MB
 	if bytes < minBytes {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "maintenance_work_mem could be increased",
-			Problem:        fmt.Sprintf("maintenance_work_mem=%s is below recommended 256MB", FormatBytes(bytes)),
-			Impact:         "VACUUM, CREATE INDEX, and other maintenance operations may be slower.",
-			Recommendation: "Set maintenance_work_mem to 256MB-1GB for faster maintenance",
-			CurrentValue:   FormatBytes(bytes),
-			RecommendedVal: "256MB - 1GB",
-			FixSQL:         "ALTER SYSTEM SET maintenance_work_mem = '512MB';",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "maintenance_work_mem could be increased",
+			Problem:         fmt.Sprintf("maintenance_work_mem=%s is below recommended 256MB", FormatBytes(bytes)),
+			Impact:          "VACUUM, CREATE INDEX, and other maintenance operations may be slower.",
+			Recommendation:  "Set maintenance_work_mem to 256MB-1GB for faster maintenance",
+			CurrentValue:    FormatBytes(bytes),
+			RecommendedVal:  "256MB - 1GB",
+			FixSQL:          "ALTER SYSTEM SET maintenance_work_mem = '512MB';",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"maintenance_work_mem"},
+			AffectedGUCs:    []string{"maintenance_work_mem"},
 		}}
 	}
 	return nil
@@ -479,7 +479,7 @@ func (r *RuleMaintenanceWorkMem) Evaluate(ctx *AnalysisContext) []ConfigFinding 
 // RuleEffectiveCacheSize analyzes effective_cache_size.
 type RuleEffectiveCacheSize struct{}
 
-func (r *RuleEffectiveCacheSize) ID() string       { return "rule.config.effective_cache_size" }
+func (r *RuleEffectiveCacheSize) ID() string         { return "rule.config.effective_cache_size" }
 func (r *RuleEffectiveCacheSize) Category() Category { return CategoryMemory }
 func (r *RuleEffectiveCacheSize) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	bytes, ok := ctx.GetGUCBytes("effective_cache_size")
@@ -491,18 +491,18 @@ func (r *RuleEffectiveCacheSize) Evaluate(ctx *AnalysisContext) []ConfigFinding 
 		recommended := ctx.TotalRAMBytes * 3 / 4 // 75%
 		if bytes < recommended/2 {
 			return []ConfigFinding{{
-				ID:             r.ID(),
-				Severity:       SeverityInfo,
-				Category:       r.Category(),
-				Title:          "effective_cache_size may be underestimated",
-				Problem:        fmt.Sprintf("effective_cache_size=%s is less than 50%% of RAM", FormatBytes(bytes)),
-				Impact:         "Query planner may not choose optimal plans, preferring sequential scans over index scans.",
-				Recommendation: "Set effective_cache_size to 50-75% of total RAM",
-				CurrentValue:   FormatBytes(bytes),
-				RecommendedVal: FormatBytes(recommended),
-				FixSQL:         fmt.Sprintf("ALTER SYSTEM SET effective_cache_size = '%s';", FormatBytes(recommended)),
+				ID:              r.ID(),
+				Severity:        SeverityInfo,
+				Category:        r.Category(),
+				Title:           "effective_cache_size may be underestimated",
+				Problem:         fmt.Sprintf("effective_cache_size=%s is less than 50%% of RAM", FormatBytes(bytes)),
+				Impact:          "Query planner may not choose optimal plans, preferring sequential scans over index scans.",
+				Recommendation:  "Set effective_cache_size to 50-75% of total RAM",
+				CurrentValue:    FormatBytes(bytes),
+				RecommendedVal:  FormatBytes(recommended),
+				FixSQL:          fmt.Sprintf("ALTER SYSTEM SET effective_cache_size = '%s';", FormatBytes(recommended)),
 				RequiresRestart: false,
-				AffectedGUCs:   []string{"effective_cache_size"},
+				AffectedGUCs:    []string{"effective_cache_size"},
 			}}
 		}
 	}
@@ -516,7 +516,7 @@ func (r *RuleEffectiveCacheSize) Evaluate(ctx *AnalysisContext) []ConfigFinding 
 // RuleMaxConnections analyzes max_connections.
 type RuleMaxConnections struct{}
 
-func (r *RuleMaxConnections) ID() string       { return "rule.config.max_connections" }
+func (r *RuleMaxConnections) ID() string         { return "rule.config.max_connections" }
 func (r *RuleMaxConnections) Category() Category { return CategoryConnections }
 func (r *RuleMaxConnections) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	conns, ok := ctx.GetGUCInt("max_connections")
@@ -538,19 +538,19 @@ func (r *RuleMaxConnections) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 
 	if conns < minRequired {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityWarning,
-			Category:       r.Category(),
-			Title:          "max_connections may be insufficient",
-			Problem:        fmt.Sprintf("max_connections=%d, recommend at least %d for cluster with %d workers", conns, minRequired, ctx.WorkerCount),
-			Impact:         "Connection exhaustion may cause query failures during high load.",
-			Recommendation: fmt.Sprintf("Set max_connections >= %d", minRequired),
-			CurrentValue:   fmt.Sprintf("%d", conns),
-			RecommendedVal: fmt.Sprintf("%d", minRequired),
-			FixSQL:         fmt.Sprintf("ALTER SYSTEM SET max_connections = %d; -- Requires restart", minRequired),
+			ID:              r.ID(),
+			Severity:        SeverityWarning,
+			Category:        r.Category(),
+			Title:           "max_connections may be insufficient",
+			Problem:         fmt.Sprintf("max_connections=%d, recommend at least %d for cluster with %d workers", conns, minRequired, ctx.WorkerCount),
+			Impact:          "Connection exhaustion may cause query failures during high load.",
+			Recommendation:  fmt.Sprintf("Set max_connections >= %d", minRequired),
+			CurrentValue:    fmt.Sprintf("%d", conns),
+			RecommendedVal:  fmt.Sprintf("%d", minRequired),
+			FixSQL:          fmt.Sprintf("ALTER SYSTEM SET max_connections = %d; -- Requires restart", minRequired),
 			RequiresRestart: true,
-			AffectedGUCs:   []string{"max_connections"},
-			Evidence:       map[string]any{"worker_count": ctx.WorkerCount, "is_coordinator": ctx.IsCoordinator},
+			AffectedGUCs:    []string{"max_connections"},
+			Evidence:        map[string]any{"worker_count": ctx.WorkerCount, "is_coordinator": ctx.IsCoordinator},
 		}}
 	}
 
@@ -574,7 +574,7 @@ func (r *RuleMaxConnections) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleConnectionsVsMemory checks memory per connection.
 type RuleConnectionsVsMemory struct{}
 
-func (r *RuleConnectionsVsMemory) ID() string       { return "rule.config.connections_vs_memory" }
+func (r *RuleConnectionsVsMemory) ID() string         { return "rule.config.connections_vs_memory" }
 func (r *RuleConnectionsVsMemory) Category() Category { return CategoryMemory }
 func (r *RuleConnectionsVsMemory) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	conns, hasConns := ctx.GetGUCInt("max_connections")
@@ -611,7 +611,7 @@ func (r *RuleConnectionsVsMemory) Evaluate(ctx *AnalysisContext) []ConfigFinding
 // RuleShardCount analyzes citus.shard_count.
 type RuleShardCount struct{}
 
-func (r *RuleShardCount) ID() string       { return "rule.config.shard_count" }
+func (r *RuleShardCount) ID() string         { return "rule.config.shard_count" }
 func (r *RuleShardCount) Category() Category { return CategoryDistribution }
 func (r *RuleShardCount) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	shardCount, ok := ctx.GetGUCInt("citus.shard_count")
@@ -624,19 +624,19 @@ func (r *RuleShardCount) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 		minRecommended := int64(ctx.WorkerCount * 8)
 		if shardCount < minRecommended {
 			return []ConfigFinding{{
-				ID:             r.ID(),
-				Severity:       SeverityInfo,
-				Category:       r.Category(),
-				Title:          "shard_count may limit parallelism",
-				Problem:        fmt.Sprintf("citus.shard_count=%d with %d workers. Recommend at least %d shards.", shardCount, ctx.WorkerCount, minRecommended),
-				Impact:         "Fewer shards per worker reduces parallelism and may cause uneven data distribution.",
-				Recommendation: fmt.Sprintf("Set citus.shard_count = %d or higher for new tables", minRecommended),
-				CurrentValue:   fmt.Sprintf("%d", shardCount),
-				RecommendedVal: fmt.Sprintf("%d", minRecommended),
-				FixSQL:         fmt.Sprintf("ALTER SYSTEM SET citus.shard_count = %d;", minRecommended),
+				ID:              r.ID(),
+				Severity:        SeverityInfo,
+				Category:        r.Category(),
+				Title:           "shard_count may limit parallelism",
+				Problem:         fmt.Sprintf("citus.shard_count=%d with %d workers. Recommend at least %d shards.", shardCount, ctx.WorkerCount, minRecommended),
+				Impact:          "Fewer shards per worker reduces parallelism and may cause uneven data distribution.",
+				Recommendation:  fmt.Sprintf("Set citus.shard_count = %d or higher for new tables", minRecommended),
+				CurrentValue:    fmt.Sprintf("%d", shardCount),
+				RecommendedVal:  fmt.Sprintf("%d", minRecommended),
+				FixSQL:          fmt.Sprintf("ALTER SYSTEM SET citus.shard_count = %d;", minRecommended),
 				RequiresRestart: false,
-				AffectedGUCs:   []string{"citus.shard_count"},
-				Evidence:       map[string]any{"worker_count": ctx.WorkerCount, "shards_per_worker": shardCount / int64(ctx.WorkerCount)},
+				AffectedGUCs:    []string{"citus.shard_count"},
+				Evidence:        map[string]any{"worker_count": ctx.WorkerCount, "shards_per_worker": shardCount / int64(ctx.WorkerCount)},
 			}}
 		}
 
@@ -662,7 +662,7 @@ func (r *RuleShardCount) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleShardReplicationFactor analyzes replication factor.
 type RuleShardReplicationFactor struct{}
 
-func (r *RuleShardReplicationFactor) ID() string       { return "rule.config.shard_replication_factor" }
+func (r *RuleShardReplicationFactor) ID() string         { return "rule.config.shard_replication_factor" }
 func (r *RuleShardReplicationFactor) Category() Category { return CategoryHA }
 func (r *RuleShardReplicationFactor) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	replFactor, ok := ctx.GetGUCInt("citus.shard_replication_factor")
@@ -689,7 +689,9 @@ func (r *RuleShardReplicationFactor) Evaluate(ctx *AnalysisContext) []ConfigFind
 // RuleMaxAdaptiveExecutorPoolSize analyzes executor pool size.
 type RuleMaxAdaptiveExecutorPoolSize struct{}
 
-func (r *RuleMaxAdaptiveExecutorPoolSize) ID() string       { return "rule.config.max_adaptive_executor_pool_size" }
+func (r *RuleMaxAdaptiveExecutorPoolSize) ID() string {
+	return "rule.config.max_adaptive_executor_pool_size"
+}
 func (r *RuleMaxAdaptiveExecutorPoolSize) Category() Category { return CategoryExecution }
 func (r *RuleMaxAdaptiveExecutorPoolSize) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	poolSize, ok := ctx.GetGUCInt("citus.max_adaptive_executor_pool_size")
@@ -722,7 +724,7 @@ func (r *RuleMaxAdaptiveExecutorPoolSize) Evaluate(ctx *AnalysisContext) []Confi
 // RuleBackgroundTaskExecutors analyzes background task parallelism.
 type RuleBackgroundTaskExecutors struct{}
 
-func (r *RuleBackgroundTaskExecutors) ID() string       { return "rule.config.background_task_executors" }
+func (r *RuleBackgroundTaskExecutors) ID() string         { return "rule.config.background_task_executors" }
 func (r *RuleBackgroundTaskExecutors) Category() Category { return CategoryOperations }
 func (r *RuleBackgroundTaskExecutors) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	executors, ok := ctx.GetGUCInt("citus.max_background_task_executors_per_node")
@@ -732,18 +734,18 @@ func (r *RuleBackgroundTaskExecutors) Evaluate(ctx *AnalysisContext) []ConfigFin
 
 	if executors == 1 {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "Background task executors at default",
-			Problem:        "citus.max_background_task_executors_per_node=1 limits parallel shard operations",
-			Impact:         "Rebalancing and shard moves will be sequential, taking longer to complete.",
-			Recommendation: "Set to 2-4 for faster rebalancing (ensure sufficient replication slots)",
-			CurrentValue:   "1",
-			RecommendedVal: "2-4",
-			FixSQL:         "ALTER SYSTEM SET citus.max_background_task_executors_per_node = 2;",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "Background task executors at default",
+			Problem:         "citus.max_background_task_executors_per_node=1 limits parallel shard operations",
+			Impact:          "Rebalancing and shard moves will be sequential, taking longer to complete.",
+			Recommendation:  "Set to 2-4 for faster rebalancing (ensure sufficient replication slots)",
+			CurrentValue:    "1",
+			RecommendedVal:  "2-4",
+			FixSQL:          "ALTER SYSTEM SET citus.max_background_task_executors_per_node = 2;",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"citus.max_background_task_executors_per_node"},
+			AffectedGUCs:    []string{"citus.max_background_task_executors_per_node"},
 		}}
 	}
 	return nil
@@ -752,7 +754,7 @@ func (r *RuleBackgroundTaskExecutors) Evaluate(ctx *AnalysisContext) []ConfigFin
 // RuleNodeConnectionTimeout analyzes node connection timeout.
 type RuleNodeConnectionTimeout struct{}
 
-func (r *RuleNodeConnectionTimeout) ID() string       { return "rule.config.node_connection_timeout" }
+func (r *RuleNodeConnectionTimeout) ID() string         { return "rule.config.node_connection_timeout" }
 func (r *RuleNodeConnectionTimeout) Category() Category { return CategoryOperations }
 func (r *RuleNodeConnectionTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	g, ok := ctx.GetGUC("citus.node_connection_timeout")
@@ -766,18 +768,18 @@ func (r *RuleNodeConnectionTimeout) Evaluate(ctx *AnalysisContext) []ConfigFindi
 		val, _ := ParseInt(strings.TrimSuffix(timeout, "ms"))
 		if val < 1000 {
 			return []ConfigFinding{{
-				ID:             r.ID(),
-				Severity:       SeverityWarning,
-				Category:       r.Category(),
-				Title:          "Node connection timeout very short",
-				Problem:        fmt.Sprintf("citus.node_connection_timeout=%s may cause spurious failures", timeout),
-				Impact:         "Transient network delays may cause query failures.",
-				Recommendation: "Set to at least 5s unless you have very low latency network",
-				CurrentValue:   timeout,
-				RecommendedVal: "5s",
-				FixSQL:         "ALTER SYSTEM SET citus.node_connection_timeout = '5s';",
+				ID:              r.ID(),
+				Severity:        SeverityWarning,
+				Category:        r.Category(),
+				Title:           "Node connection timeout very short",
+				Problem:         fmt.Sprintf("citus.node_connection_timeout=%s may cause spurious failures", timeout),
+				Impact:          "Transient network delays may cause query failures.",
+				Recommendation:  "Set to at least 5s unless you have very low latency network",
+				CurrentValue:    timeout,
+				RecommendedVal:  "5s",
+				FixSQL:          "ALTER SYSTEM SET citus.node_connection_timeout = '5s';",
 				RequiresRestart: false,
-				AffectedGUCs:   []string{"citus.node_connection_timeout"},
+				AffectedGUCs:    []string{"citus.node_connection_timeout"},
 			}}
 		}
 	}
@@ -791,7 +793,7 @@ func (r *RuleNodeConnectionTimeout) Evaluate(ctx *AnalysisContext) []ConfigFindi
 // RuleRandomPageCost analyzes random_page_cost for SSDs.
 type RuleRandomPageCost struct{}
 
-func (r *RuleRandomPageCost) ID() string       { return "rule.config.random_page_cost" }
+func (r *RuleRandomPageCost) ID() string         { return "rule.config.random_page_cost" }
 func (r *RuleRandomPageCost) Category() Category { return CategoryPerformance }
 func (r *RuleRandomPageCost) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	g, ok := ctx.GetGUC("random_page_cost")
@@ -802,18 +804,18 @@ func (r *RuleRandomPageCost) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	// Default is 4.0, but SSDs should use 1.1-1.5
 	if g.Setting == "4" || g.Setting == "4.0" {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "random_page_cost at HDD default",
-			Problem:        "random_page_cost=4.0 assumes spinning disks",
-			Impact:         "Query planner may avoid index scans that would be faster on SSDs.",
-			Recommendation: "Set random_page_cost=1.1 for SSDs, 1.5-2.0 for fast SANs",
-			CurrentValue:   g.Setting,
-			RecommendedVal: "1.1 (SSD) or 1.5 (fast storage)",
-			FixSQL:         "ALTER SYSTEM SET random_page_cost = 1.1;",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "random_page_cost at HDD default",
+			Problem:         "random_page_cost=4.0 assumes spinning disks",
+			Impact:          "Query planner may avoid index scans that would be faster on SSDs.",
+			Recommendation:  "Set random_page_cost=1.1 for SSDs, 1.5-2.0 for fast SANs",
+			CurrentValue:    g.Setting,
+			RecommendedVal:  "1.1 (SSD) or 1.5 (fast storage)",
+			FixSQL:          "ALTER SYSTEM SET random_page_cost = 1.1;",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"random_page_cost"},
+			AffectedGUCs:    []string{"random_page_cost"},
 		}}
 	}
 	return nil
@@ -822,7 +824,7 @@ func (r *RuleRandomPageCost) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleEffectiveIOConcurrency analyzes I/O concurrency.
 type RuleEffectiveIOConcurrency struct{}
 
-func (r *RuleEffectiveIOConcurrency) ID() string       { return "rule.config.effective_io_concurrency" }
+func (r *RuleEffectiveIOConcurrency) ID() string         { return "rule.config.effective_io_concurrency" }
 func (r *RuleEffectiveIOConcurrency) Category() Category { return CategoryPerformance }
 func (r *RuleEffectiveIOConcurrency) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	conc, ok := ctx.GetGUCInt("effective_io_concurrency")
@@ -832,18 +834,18 @@ func (r *RuleEffectiveIOConcurrency) Evaluate(ctx *AnalysisContext) []ConfigFind
 
 	if conc <= 2 {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "effective_io_concurrency is low",
-			Problem:        fmt.Sprintf("effective_io_concurrency=%d assumes spinning disks", conc),
-			Impact:         "PostgreSQL won't prefetch data efficiently on SSDs.",
-			Recommendation: "Set effective_io_concurrency=200 for SSDs, 2 for spinning disks",
-			CurrentValue:   fmt.Sprintf("%d", conc),
-			RecommendedVal: "200 (SSD)",
-			FixSQL:         "ALTER SYSTEM SET effective_io_concurrency = 200;",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "effective_io_concurrency is low",
+			Problem:         fmt.Sprintf("effective_io_concurrency=%d assumes spinning disks", conc),
+			Impact:          "PostgreSQL won't prefetch data efficiently on SSDs.",
+			Recommendation:  "Set effective_io_concurrency=200 for SSDs, 2 for spinning disks",
+			CurrentValue:    fmt.Sprintf("%d", conc),
+			RecommendedVal:  "200 (SSD)",
+			FixSQL:          "ALTER SYSTEM SET effective_io_concurrency = 200;",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"effective_io_concurrency"},
+			AffectedGUCs:    []string{"effective_io_concurrency"},
 		}}
 	}
 	return nil
@@ -852,7 +854,7 @@ func (r *RuleEffectiveIOConcurrency) Evaluate(ctx *AnalysisContext) []ConfigFind
 // RuleStatisticsTarget analyzes statistics granularity.
 type RuleStatisticsTarget struct{}
 
-func (r *RuleStatisticsTarget) ID() string       { return "rule.config.statistics_target" }
+func (r *RuleStatisticsTarget) ID() string         { return "rule.config.statistics_target" }
 func (r *RuleStatisticsTarget) Category() Category { return CategoryPerformance }
 func (r *RuleStatisticsTarget) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	target, ok := ctx.GetGUCInt("default_statistics_target")
@@ -883,7 +885,7 @@ func (r *RuleStatisticsTarget) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleStatementTimeout analyzes statement timeout.
 type RuleStatementTimeout struct{}
 
-func (r *RuleStatementTimeout) ID() string       { return "rule.config.statement_timeout" }
+func (r *RuleStatementTimeout) ID() string         { return "rule.config.statement_timeout" }
 func (r *RuleStatementTimeout) Category() Category { return CategoryOperations }
 func (r *RuleStatementTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	timeout, ok := ctx.GetGUCInt("statement_timeout")
@@ -893,18 +895,18 @@ func (r *RuleStatementTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 
 	if timeout == 0 {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "No statement timeout configured",
-			Problem:        "statement_timeout=0 allows queries to run indefinitely",
-			Impact:         "Runaway queries can consume resources and block others.",
-			Recommendation: "Consider setting a reasonable timeout (e.g., 30s-5min) for production",
-			CurrentValue:   "0 (disabled)",
-			RecommendedVal: "30s - 5min depending on workload",
-			FixSQL:         "ALTER SYSTEM SET statement_timeout = '60s';",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "No statement timeout configured",
+			Problem:         "statement_timeout=0 allows queries to run indefinitely",
+			Impact:          "Runaway queries can consume resources and block others.",
+			Recommendation:  "Consider setting a reasonable timeout (e.g., 30s-5min) for production",
+			CurrentValue:    "0 (disabled)",
+			RecommendedVal:  "30s - 5min depending on workload",
+			FixSQL:          "ALTER SYSTEM SET statement_timeout = '60s';",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"statement_timeout"},
+			AffectedGUCs:    []string{"statement_timeout"},
 		}}
 	}
 	return nil
@@ -913,7 +915,7 @@ func (r *RuleStatementTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleLockTimeout analyzes lock timeout.
 type RuleLockTimeout struct{}
 
-func (r *RuleLockTimeout) ID() string       { return "rule.config.lock_timeout" }
+func (r *RuleLockTimeout) ID() string         { return "rule.config.lock_timeout" }
 func (r *RuleLockTimeout) Category() Category { return CategoryOperations }
 func (r *RuleLockTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	timeout, ok := ctx.GetGUCInt("lock_timeout")
@@ -923,18 +925,18 @@ func (r *RuleLockTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 
 	if timeout == 0 {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "No lock timeout configured",
-			Problem:        "lock_timeout=0 allows indefinite lock waits",
-			Impact:         "Queries may wait forever for locks, causing application timeouts.",
-			Recommendation: "Set lock_timeout to prevent indefinite waits (e.g., 10s-30s)",
-			CurrentValue:   "0 (disabled)",
-			RecommendedVal: "10s - 30s",
-			FixSQL:         "ALTER SYSTEM SET lock_timeout = '10s';",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "No lock timeout configured",
+			Problem:         "lock_timeout=0 allows indefinite lock waits",
+			Impact:          "Queries may wait forever for locks, causing application timeouts.",
+			Recommendation:  "Set lock_timeout to prevent indefinite waits (e.g., 10s-30s)",
+			CurrentValue:    "0 (disabled)",
+			RecommendedVal:  "10s - 30s",
+			FixSQL:          "ALTER SYSTEM SET lock_timeout = '10s';",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"lock_timeout"},
+			AffectedGUCs:    []string{"lock_timeout"},
 		}}
 	}
 	return nil
@@ -943,7 +945,7 @@ func (r *RuleLockTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleIdleInTransactionTimeout analyzes idle transaction timeout.
 type RuleIdleInTransactionTimeout struct{}
 
-func (r *RuleIdleInTransactionTimeout) ID() string       { return "rule.config.idle_in_transaction_timeout" }
+func (r *RuleIdleInTransactionTimeout) ID() string         { return "rule.config.idle_in_transaction_timeout" }
 func (r *RuleIdleInTransactionTimeout) Category() Category { return CategoryOperations }
 func (r *RuleIdleInTransactionTimeout) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	timeout, ok := ctx.GetGUCInt("idle_in_transaction_session_timeout")
@@ -953,18 +955,18 @@ func (r *RuleIdleInTransactionTimeout) Evaluate(ctx *AnalysisContext) []ConfigFi
 
 	if timeout == 0 {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityWarning,
-			Category:       r.Category(),
-			Title:          "No idle-in-transaction timeout",
-			Problem:        "idle_in_transaction_session_timeout=0 allows abandoned transactions",
-			Impact:         "Idle transactions hold locks and prevent VACUUM, causing table bloat.",
-			Recommendation: "Set idle_in_transaction_session_timeout (e.g., 5min) to terminate abandoned transactions",
-			CurrentValue:   "0 (disabled)",
-			RecommendedVal: "5min",
-			FixSQL:         "ALTER SYSTEM SET idle_in_transaction_session_timeout = '5min';",
+			ID:              r.ID(),
+			Severity:        SeverityWarning,
+			Category:        r.Category(),
+			Title:           "No idle-in-transaction timeout",
+			Problem:         "idle_in_transaction_session_timeout=0 allows abandoned transactions",
+			Impact:          "Idle transactions hold locks and prevent VACUUM, causing table bloat.",
+			Recommendation:  "Set idle_in_transaction_session_timeout (e.g., 5min) to terminate abandoned transactions",
+			CurrentValue:    "0 (disabled)",
+			RecommendedVal:  "5min",
+			FixSQL:          "ALTER SYSTEM SET idle_in_transaction_session_timeout = '5min';",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"idle_in_transaction_session_timeout"},
+			AffectedGUCs:    []string{"idle_in_transaction_session_timeout"},
 		}}
 	}
 	return nil
@@ -973,7 +975,7 @@ func (r *RuleIdleInTransactionTimeout) Evaluate(ctx *AnalysisContext) []ConfigFi
 // RuleLogMinDurationStatement analyzes slow query logging.
 type RuleLogMinDurationStatement struct{}
 
-func (r *RuleLogMinDurationStatement) ID() string       { return "rule.config.log_slow_queries" }
+func (r *RuleLogMinDurationStatement) ID() string         { return "rule.config.log_slow_queries" }
 func (r *RuleLogMinDurationStatement) Category() Category { return CategoryOperations }
 func (r *RuleLogMinDurationStatement) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	duration, ok := ctx.GetGUCInt("log_min_duration_statement")
@@ -983,18 +985,18 @@ func (r *RuleLogMinDurationStatement) Evaluate(ctx *AnalysisContext) []ConfigFin
 
 	if duration == -1 {
 		return []ConfigFinding{{
-			ID:             r.ID(),
-			Severity:       SeverityInfo,
-			Category:       r.Category(),
-			Title:          "Slow query logging disabled",
-			Problem:        "log_min_duration_statement=-1 disables slow query logging",
-			Impact:         "Cannot identify slow queries from logs for optimization.",
-			Recommendation: "Set log_min_duration_statement=1000 (1s) or lower to log slow queries",
-			CurrentValue:   "-1 (disabled)",
-			RecommendedVal: "1000ms (1 second)",
-			FixSQL:         "ALTER SYSTEM SET log_min_duration_statement = 1000;",
+			ID:              r.ID(),
+			Severity:        SeverityInfo,
+			Category:        r.Category(),
+			Title:           "Slow query logging disabled",
+			Problem:         "log_min_duration_statement=-1 disables slow query logging",
+			Impact:          "Cannot identify slow queries from logs for optimization.",
+			Recommendation:  "Set log_min_duration_statement=1000 (1s) or lower to log slow queries",
+			CurrentValue:    "-1 (disabled)",
+			RecommendedVal:  "1000ms (1 second)",
+			FixSQL:          "ALTER SYSTEM SET log_min_duration_statement = 1000;",
 			RequiresRestart: false,
-			AffectedGUCs:   []string{"log_min_duration_statement"},
+			AffectedGUCs:    []string{"log_min_duration_statement"},
 		}}
 	}
 	return nil
@@ -1007,7 +1009,7 @@ func (r *RuleLogMinDurationStatement) Evaluate(ctx *AnalysisContext) []ConfigFin
 // RuleParallelWorkers analyzes parallel query configuration.
 type RuleParallelWorkers struct{}
 
-func (r *RuleParallelWorkers) ID() string       { return "rule.config.parallel_workers" }
+func (r *RuleParallelWorkers) ID() string         { return "rule.config.parallel_workers" }
 func (r *RuleParallelWorkers) Category() Category { return CategoryParallelism }
 func (r *RuleParallelWorkers) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	maxParallel, ok := ctx.GetGUCInt("max_parallel_workers")
@@ -1039,7 +1041,7 @@ func (r *RuleParallelWorkers) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 // RuleUseSecondaryNodes analyzes secondary node usage.
 type RuleUseSecondaryNodes struct{}
 
-func (r *RuleUseSecondaryNodes) ID() string       { return "rule.config.use_secondary_nodes" }
+func (r *RuleUseSecondaryNodes) ID() string         { return "rule.config.use_secondary_nodes" }
 func (r *RuleUseSecondaryNodes) Category() Category { return CategoryHA }
 func (r *RuleUseSecondaryNodes) Evaluate(ctx *AnalysisContext) []ConfigFinding {
 	g, ok := ctx.GetGUC("citus.use_secondary_nodes")

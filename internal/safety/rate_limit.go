@@ -6,7 +6,7 @@
 package safety
 
 // Limiter is a placeholder rate limiter.
-type Limiter struct {}
+type Limiter struct{}
 
 func NewLimiter() *Limiter { return &Limiter{} }
 

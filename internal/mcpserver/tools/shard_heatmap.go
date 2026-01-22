@@ -337,7 +337,10 @@ func topShards(shards []shardRecord, limit int, metricBytes bool) []HeatmapShard
 	}
 	sort.Slice(shards, func(i, j int) bool {
 		if metricBytes {
-			return shards[i].Bytes > shards[j].Bytes
+			if shards[i].Bytes != shards[j].Bytes {
+				return shards[i].Bytes > shards[j].Bytes
+			}
+			return shards[i].ShardID < shards[j].ShardID // stable tie-breaker
 		}
 		return shards[i].ShardID < shards[j].ShardID
 	})

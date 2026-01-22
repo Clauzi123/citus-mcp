@@ -9,8 +9,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	serr "citus-mcp/internal/errors"
+	"github.com/jackc/pgx/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -22,9 +22,9 @@ type ColocationInspectorInput struct {
 
 // ColocationInspectorOutput shows colocation group details.
 type ColocationInspectorOutput struct {
-	Summary    ColocationSummary   `json:"summary"`
-	Groups     []ColocationGroup   `json:"groups"`
-	Warnings   []string            `json:"warnings,omitempty"`
+	Summary  ColocationSummary `json:"summary"`
+	Groups   []ColocationGroup `json:"groups"`
+	Warnings []string          `json:"warnings,omitempty"`
 }
 
 type ColocationSummary struct {
@@ -36,13 +36,13 @@ type ColocationSummary struct {
 }
 
 type ColocationGroup struct {
-	ColocationID    int32              `json:"colocation_id"`
-	ShardCount      int32              `json:"shard_count"`
-	ReplicationFactor int32            `json:"replication_factor"`
-	DistColumn      string             `json:"distribution_column_type"`
-	Tables          []ColocationTable  `json:"tables"`
-	TotalBytes      int64              `json:"total_bytes"`
-	SkewRatio       float64            `json:"skew_ratio"`
+	ColocationID      int32             `json:"colocation_id"`
+	ShardCount        int32             `json:"shard_count"`
+	ReplicationFactor int32             `json:"replication_factor"`
+	DistColumn        string            `json:"distribution_column_type"`
+	Tables            []ColocationTable `json:"tables"`
+	TotalBytes        int64             `json:"total_bytes"`
+	SkewRatio         float64           `json:"skew_ratio"`
 }
 
 type ColocationTable struct {

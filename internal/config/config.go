@@ -50,11 +50,11 @@ type Config struct {
 	SnapshotAdvisorCollectBytes bool     `mapstructure:"snapshot_advisor_collect_bytes"`
 
 	// Transport configuration
-	Transport     TransportType `mapstructure:"transport"`
-	HTTPAddr      string        `mapstructure:"http_addr"`
-	HTTPPort      int           `mapstructure:"http_port"`
-	HTTPPath      string        `mapstructure:"http_path"`
-	SSEKeepAlive  int           `mapstructure:"sse_keepalive_seconds"`
+	Transport    TransportType `mapstructure:"transport"`
+	HTTPAddr     string        `mapstructure:"http_addr"`
+	HTTPPort     int           `mapstructure:"http_port"`
+	HTTPPath     string        `mapstructure:"http_path"`
+	SSEKeepAlive int           `mapstructure:"sse_keepalive_seconds"`
 }
 
 func defaults(v *viper.Viper) {

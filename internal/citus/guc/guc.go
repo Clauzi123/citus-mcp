@@ -18,16 +18,16 @@ import (
 type Category string
 
 const (
-	CategoryMemory      Category = "memory"
-	CategoryConnections Category = "connections"
-	CategoryParallelism Category = "parallelism"
-	CategoryReplication Category = "replication"
-	CategoryPerformance Category = "performance"
+	CategoryMemory       Category = "memory"
+	CategoryConnections  Category = "connections"
+	CategoryParallelism  Category = "parallelism"
+	CategoryReplication  Category = "replication"
+	CategoryPerformance  Category = "performance"
 	CategoryDistribution Category = "distribution"
-	CategoryExecution   Category = "execution"
-	CategoryHA          Category = "high_availability"
-	CategoryOperations  Category = "operations"
-	CategorySecurity    Category = "security"
+	CategoryExecution    Category = "execution"
+	CategoryHA           Category = "high_availability"
+	CategoryOperations   Category = "operations"
+	CategorySecurity     Category = "security"
 )
 
 // GUCDef defines metadata for a configuration parameter.

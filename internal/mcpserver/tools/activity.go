@@ -22,19 +22,19 @@ type ActivityInput struct {
 
 // ActivityOutput shows cluster-wide activity.
 type ActivityOutput struct {
-	Summary    ActivitySummary   `json:"summary"`
-	Activities []ActivityRecord  `json:"activities"`
-	TopByTime  []ActivityRecord  `json:"top_by_time,omitempty"`
-	Warnings   []string          `json:"warnings,omitempty"`
+	Summary    ActivitySummary  `json:"summary"`
+	Activities []ActivityRecord `json:"activities"`
+	TopByTime  []ActivityRecord `json:"top_by_time,omitempty"`
+	Warnings   []string         `json:"warnings,omitempty"`
 }
 
 type ActivitySummary struct {
-	TotalConnections   int    `json:"total_connections"`
-	ActiveQueries      int    `json:"active_queries"`
-	IdleConnections    int    `json:"idle_connections"`
-	WaitingOnLocks     int    `json:"waiting_on_locks"`
+	TotalConnections   int     `json:"total_connections"`
+	ActiveQueries      int     `json:"active_queries"`
+	IdleConnections    int     `json:"idle_connections"`
+	WaitingOnLocks     int     `json:"waiting_on_locks"`
 	LongestRunningMins float64 `json:"longest_running_mins"`
-	GeneratedAt        string `json:"generated_at"`
+	GeneratedAt        string  `json:"generated_at"`
 }
 
 type ActivityRecord struct {
@@ -54,7 +54,7 @@ type ActivityRecord struct {
 
 func activityTool(ctx context.Context, deps Dependencies, input ActivityInput) (*mcp.CallToolResult, ActivityOutput, error) {
 	emptyOutput := ActivityOutput{Activities: []ActivityRecord{}, TopByTime: []ActivityRecord{}}
-	
+
 	if err := deps.Guardrails.RequireReadOnlySQL("SELECT 1"); err != nil {
 		return callError(serr.CodePermissionDenied, err.Error(), ""), emptyOutput, nil
 	}

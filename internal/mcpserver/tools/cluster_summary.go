@@ -27,31 +27,31 @@ type ClusterSummaryInput struct {
 
 // ClusterSummaryOutput defines output structure.
 type ClusterSummaryOutput struct {
-	Coordinator       CoordinatorSummary   `json:"coordinator"`
-	Workers           []WorkerSummary      `json:"workers,omitempty"`
-	Counts            CountsSummary        `json:"counts"`
-	Warnings          []string             `json:"warnings,omitempty"`
-	GUCs              map[string]string    `json:"gucs,omitempty"`
-	Configuration     *ConfigurationReport `json:"configuration,omitempty"`
+	Coordinator   CoordinatorSummary   `json:"coordinator"`
+	Workers       []WorkerSummary      `json:"workers,omitempty"`
+	Counts        CountsSummary        `json:"counts"`
+	Warnings      []string             `json:"warnings,omitempty"`
+	GUCs          map[string]string    `json:"gucs,omitempty"`
+	Configuration *ConfigurationReport `json:"configuration,omitempty"`
 }
 
 // ConfigurationReport provides a summary of important configuration settings.
 type ConfigurationReport struct {
-	Summary           string                     `json:"summary"`
-	OverallHealth     string                     `json:"overall_health"`
-	CriticalIssues    int                        `json:"critical_issues"`
-	Warnings          int                        `json:"warnings"`
-	CitusSettings     map[string]ConfigValue     `json:"citus_settings"`
-	PostgresSettings  map[string]ConfigValue     `json:"postgres_settings"`
-	Recommendations   []string                   `json:"recommendations,omitempty"`
+	Summary          string                 `json:"summary"`
+	OverallHealth    string                 `json:"overall_health"`
+	CriticalIssues   int                    `json:"critical_issues"`
+	Warnings         int                    `json:"warnings"`
+	CitusSettings    map[string]ConfigValue `json:"citus_settings"`
+	PostgresSettings map[string]ConfigValue `json:"postgres_settings"`
+	Recommendations  []string               `json:"recommendations,omitempty"`
 }
 
 // ConfigValue represents a configuration parameter value with context.
 type ConfigValue struct {
-	Value       string `json:"value"`
-	Unit        string `json:"unit,omitempty"`
-	IsDefault   bool   `json:"is_default"`
-	Status      string `json:"status,omitempty"` // ok, warning, critical
+	Value     string `json:"value"`
+	Unit      string `json:"unit,omitempty"`
+	IsDefault bool   `json:"is_default"`
+	Status    string `json:"status,omitempty"` // ok, warning, critical
 }
 
 type CoordinatorSummary struct {

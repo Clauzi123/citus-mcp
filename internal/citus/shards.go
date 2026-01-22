@@ -12,13 +12,13 @@ import (
 )
 
 type Shard struct {
-	ShardID      int64             `json:"shard_id"`
-	ShardStorage string            `json:"shard_storage"`
-	ShardMin     *string           `json:"shard_min_value,omitempty"`
-	ShardMax     *string           `json:"shard_max_value,omitempty"`
-	TableName    string            `json:"table_name"`
-	SchemaName   string            `json:"schema_name"`
-	Placements   []ShardNodeInfo   `json:"placements,omitempty"`
+	ShardID      int64           `json:"shard_id"`
+	ShardStorage string          `json:"shard_storage"`
+	ShardMin     *string         `json:"shard_min_value,omitempty"`
+	ShardMax     *string         `json:"shard_max_value,omitempty"`
+	TableName    string          `json:"table_name"`
+	SchemaName   string          `json:"schema_name"`
+	Placements   []ShardNodeInfo `json:"placements,omitempty"`
 }
 
 type ShardNodeInfo struct {

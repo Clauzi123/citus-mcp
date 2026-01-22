@@ -1,6 +1,35 @@
+# Build artifacts
 bin/
+dist/
+
+# Dependencies
 vendor/
+
+# Test artifacts
 *.log
 *.out
 *.test
+coverage.out
+coverage.html
 coverage.txt
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config (may contain secrets)
+config.yaml
+citus-mcp.yaml
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp

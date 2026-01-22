@@ -195,12 +195,12 @@ func Ping(ctx context.Context, deps Dependencies, input PingInput) (*mcp.CallToo
 type ServerInfoInput struct{}
 
 type ServerInfoOutput struct {
-	Version      string              `json:"version"`
-	Commit       string              `json:"commit"`
-	BuildDate    string              `json:"build_date"`
-	ReadOnly     bool                `json:"read_only"`
-	AllowExecute bool                `json:"allow_execute"`
-	Metadata     *citus.Metadata     `json:"metadata,omitempty"`
+	Version      string          `json:"version"`
+	Commit       string          `json:"commit"`
+	BuildDate    string          `json:"build_date"`
+	ReadOnly     bool            `json:"read_only"`
+	AllowExecute bool            `json:"allow_execute"`
+	Metadata     *citus.Metadata `json:"metadata,omitempty"`
 }
 
 func ServerInfo(ctx context.Context, deps Dependencies) (*mcp.CallToolResult, ServerInfoOutput, error) {

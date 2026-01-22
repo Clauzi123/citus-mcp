@@ -9,8 +9,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	serr "citus-mcp/internal/errors"
+	"github.com/jackc/pgx/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

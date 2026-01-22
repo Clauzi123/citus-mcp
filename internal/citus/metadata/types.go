@@ -108,14 +108,14 @@ type AffectedObject struct {
 
 // Fix provides repair suggestions for an issue.
 type Fix struct {
-	Approach         string   `json:"approach"`
+	Approach         string    `json:"approach"`
 	RiskLevel        RiskLevel `json:"risk_level"`
-	RequiresDowntime bool     `json:"requires_downtime"`
-	RequiresBackup   bool     `json:"requires_backup"`
-	SQLCommands      []string `json:"sql_commands,omitempty"`
-	VerificationSQL  string   `json:"verification_sql,omitempty"`
-	Notes            string   `json:"notes,omitempty"`
-	ManualSteps      []string `json:"manual_steps,omitempty"`
+	RequiresDowntime bool      `json:"requires_downtime"`
+	RequiresBackup   bool      `json:"requires_backup"`
+	SQLCommands      []string  `json:"sql_commands,omitempty"`
+	VerificationSQL  string    `json:"verification_sql,omitempty"`
+	Notes            string    `json:"notes,omitempty"`
+	ManualSteps      []string  `json:"manual_steps,omitempty"`
 }
 
 // OrphanedShard represents a shard without placements.
@@ -136,9 +136,9 @@ type OrphanedPlacement struct {
 
 // MissingRelation represents pg_dist_partition referencing a missing table.
 type MissingRelation struct {
-	LogicalRelID  int64  `json:"logical_rel_id"`
-	PartMethod    string `json:"part_method"`
-	ColocationID  int32  `json:"colocation_id"`
+	LogicalRelID     int64  `json:"logical_rel_id"`
+	PartMethod       string `json:"part_method"`
+	ColocationID     int32  `json:"colocation_id"`
 	ReplicationModel string `json:"replication_model"`
 }
 
@@ -168,20 +168,20 @@ type ColocationMismatch struct {
 
 // UnsyncedNode represents a node with pending metadata sync.
 type UnsyncedNode struct {
-	NodeID       int32  `json:"node_id"`
-	NodeName     string `json:"node_name"`
-	NodePort     int32  `json:"node_port"`
-	HasMetadata  bool   `json:"has_metadata"`
-	MetadataSynced bool `json:"metadata_synced"`
+	NodeID         int32  `json:"node_id"`
+	NodeName       string `json:"node_name"`
+	NodePort       int32  `json:"node_port"`
+	HasMetadata    bool   `json:"has_metadata"`
+	MetadataSynced bool   `json:"metadata_synced"`
 }
 
 // ShardRangeGap represents a gap in shard ranges for a table.
 type ShardRangeGap struct {
-	TableName  string `json:"table_name"`
-	PrevShard  int64  `json:"prev_shard"`
-	NextShard  int64  `json:"next_shard"`
-	GapStart   int64  `json:"gap_start"`
-	GapEnd     int64  `json:"gap_end"`
+	TableName string `json:"table_name"`
+	PrevShard int64  `json:"prev_shard"`
+	NextShard int64  `json:"next_shard"`
+	GapStart  int64  `json:"gap_start"`
+	GapEnd    int64  `json:"gap_end"`
 }
 
 // ShardRangeOverlap represents overlapping shard ranges.
@@ -195,9 +195,9 @@ type ShardRangeOverlap struct {
 
 // ReferenceTableIssue represents a reference table with insufficient placements.
 type ReferenceTableIssue struct {
-	TableName      string `json:"table_name"`
-	PlacementCount int    `json:"placement_count"`
-	ActiveNodes    int    `json:"active_nodes"`
+	TableName      string   `json:"table_name"`
+	PlacementCount int      `json:"placement_count"`
+	ActiveNodes    int      `json:"active_nodes"`
 	MissingNodes   []string `json:"missing_nodes,omitempty"`
 }
 
@@ -213,9 +213,9 @@ type CrossNodeShardIssue struct {
 
 // ExtensionMismatch represents different extension versions across nodes.
 type ExtensionMismatch struct {
-	ExtensionName     string `json:"extension_name"`
+	ExtensionName      string `json:"extension_name"`
 	CoordinatorVersion string `json:"coordinator_version"`
-	NodeName          string `json:"node_name"`
-	NodePort          int32  `json:"node_port"`
-	NodeVersion       string `json:"node_version"`
+	NodeName           string `json:"node_name"`
+	NodePort           int32  `json:"node_port"`
+	NodeVersion        string `json:"node_version"`
 }

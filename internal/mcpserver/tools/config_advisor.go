@@ -29,25 +29,25 @@ type ConfigAdvisorInput struct {
 
 // ConfigAdvisorOutput is the result of configuration analysis.
 type ConfigAdvisorOutput struct {
-	Summary          ConfigSummary               `json:"summary"`
-	Findings         []guc.ConfigFinding         `json:"findings"`
-	CitusConfig      map[string]GUCDisplay       `json:"citus_config,omitempty"`
-	PostgresConfig   map[string]GUCDisplay       `json:"postgres_config,omitempty"`
-	CategorySummary  map[string]CategoryStats    `json:"category_summary"`
-	Recommendations  []string                    `json:"top_recommendations"`
+	Summary         ConfigSummary            `json:"summary"`
+	Findings        []guc.ConfigFinding      `json:"findings"`
+	CitusConfig     map[string]GUCDisplay    `json:"citus_config,omitempty"`
+	PostgresConfig  map[string]GUCDisplay    `json:"postgres_config,omitempty"`
+	CategorySummary map[string]CategoryStats `json:"category_summary"`
+	Recommendations []string                 `json:"top_recommendations"`
 }
 
 // ConfigSummary provides overview statistics.
 type ConfigSummary struct {
-	TotalFindings    int    `json:"total_findings"`
-	CriticalCount    int    `json:"critical_count"`
-	WarningCount     int    `json:"warning_count"`
-	InfoCount        int    `json:"info_count"`
-	OverallHealth    string `json:"overall_health"`
-	CitusVersion     string `json:"citus_version,omitempty"`
-	PostgresVersion  string `json:"postgres_version,omitempty"`
-	WorkerCount      int    `json:"worker_count"`
-	RequiresRestart  int    `json:"changes_requiring_restart"`
+	TotalFindings   int    `json:"total_findings"`
+	CriticalCount   int    `json:"critical_count"`
+	WarningCount    int    `json:"warning_count"`
+	InfoCount       int    `json:"info_count"`
+	OverallHealth   string `json:"overall_health"`
+	CitusVersion    string `json:"citus_version,omitempty"`
+	PostgresVersion string `json:"postgres_version,omitempty"`
+	WorkerCount     int    `json:"worker_count"`
+	RequiresRestart int    `json:"changes_requiring_restart"`
 }
 
 // GUCDisplay is a simplified GUC value for output.

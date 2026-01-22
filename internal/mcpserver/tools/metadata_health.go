@@ -24,12 +24,12 @@ type MetadataHealthInput struct {
 
 // MetadataHealthOutput is the output from the metadata health tool.
 type MetadataHealthOutput struct {
-	Summary      metadata.Summary  `json:"summary"`
-	Checks       []metadata.Check  `json:"checks"`
-	Issues       []metadata.Issue  `json:"issues"`
-	Healthy      bool              `json:"healthy"`
-	CheckedNodes []string          `json:"checked_nodes"`
-	Warnings     []string          `json:"warnings,omitempty"`
+	Summary      metadata.Summary `json:"summary"`
+	Checks       []metadata.Check `json:"checks"`
+	Issues       []metadata.Issue `json:"issues"`
+	Healthy      bool             `json:"healthy"`
+	CheckedNodes []string         `json:"checked_nodes"`
+	Warnings     []string         `json:"warnings,omitempty"`
 }
 
 func metadataHealthTool(ctx context.Context, deps Dependencies, input MetadataHealthInput) (*mcp.CallToolResult, MetadataHealthOutput, error) {

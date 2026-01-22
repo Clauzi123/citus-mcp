@@ -6,35 +6,35 @@
 package citus
 
 import (
-    "context"
+	"context"
 
-    "citus-mcp/internal/db"
-    "github.com/jackc/pgx/v5/pgxpool"
+	"citus-mcp/internal/db"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Metadata struct {
-    Server       *db.ServerInfo      `json:"server"`
-    Extension    *db.ExtensionInfo   `json:"extension"`
-    Capabilities *db.Capabilities    `json:"capabilities"`
-    Nodes        []db.Node           `json:"nodes"`
+	Server       *db.ServerInfo    `json:"server"`
+	Extension    *db.ExtensionInfo `json:"extension"`
+	Capabilities *db.Capabilities  `json:"capabilities"`
+	Nodes        []db.Node         `json:"nodes"`
 }
 
 func GetMetadata(ctx context.Context, pool *pgxpool.Pool) (*Metadata, error) {
-    extension, err := db.GetExtensionInfo(ctx, pool)
-    if err != nil {
-        return nil, err
-    }
-    server, err := db.GetServerInfo(ctx, pool)
-    if err != nil {
-        return nil, err
-    }
-    capabilities, err := db.DetectCapabilitiesWithPool(ctx, pool)
-    if err != nil {
-        return nil, err
-    }
-    nodes, err := db.ListNodes(ctx, pool)
-    if err != nil {
-        return nil, err
-    }
-    return &Metadata{Server: server, Extension: extension, Capabilities: capabilities, Nodes: nodes}, nil
+	extension, err := db.GetExtensionInfo(ctx, pool)
+	if err != nil {
+		return nil, err
+	}
+	server, err := db.GetServerInfo(ctx, pool)
+	if err != nil {
+		return nil, err
+	}
+	capabilities, err := db.DetectCapabilitiesWithPool(ctx, pool)
+	if err != nil {
+		return nil, err
+	}
+	nodes, err := db.ListNodes(ctx, pool)
+	if err != nil {
+		return nil, err
+	}
+	return &Metadata{Server: server, Extension: extension, Capabilities: capabilities, Nodes: nodes}, nil
 }

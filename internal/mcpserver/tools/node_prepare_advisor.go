@@ -28,13 +28,13 @@ type NodePrepareInput struct {
 
 // NodePrepareOutput wraps nodeprep.Output for tool output.
 type NodePrepareOutput struct {
-	Ready                    bool                    `json:"ready"`
-	Summary                  nodeprep.Summary        `json:"summary"`
-	Checks                   []nodeprep.CheckResult  `json:"checks"`
-	PreparationScript        *nodeprep.PrepScript    `json:"preparation_script,omitempty"`
-	EstimatedIssuesPrevented []string                `json:"estimated_issues_prevented,omitempty"`
-	ConnectionError          string                  `json:"connection_error,omitempty"`
-	Warnings                 []string                `json:"warnings,omitempty"`
+	Ready                    bool                   `json:"ready"`
+	Summary                  nodeprep.Summary       `json:"summary"`
+	Checks                   []nodeprep.CheckResult `json:"checks"`
+	PreparationScript        *nodeprep.PrepScript   `json:"preparation_script,omitempty"`
+	EstimatedIssuesPrevented []string               `json:"estimated_issues_prevented,omitempty"`
+	ConnectionError          string                 `json:"connection_error,omitempty"`
+	Warnings                 []string               `json:"warnings,omitempty"`
 }
 
 func nodePrepareAdvisorTool(ctx context.Context, deps Dependencies, input NodePrepareInput) (*mcp.CallToolResult, NodePrepareOutput, error) {

@@ -58,13 +58,13 @@ type Input struct {
 
 // Output from the node preparation advisor.
 type Output struct {
-	Ready                    bool              `json:"ready"`
-	Summary                  Summary           `json:"summary"`
-	Checks                   []CheckResult     `json:"checks"`
-	PreparationScript        *PrepScript       `json:"preparation_script,omitempty"`
-	EstimatedIssuesPrevented []string          `json:"estimated_issues_prevented,omitempty"`
-	ConnectionError          string            `json:"connection_error,omitempty"`
-	Warnings                 []string          `json:"warnings,omitempty"`
+	Ready                    bool          `json:"ready"`
+	Summary                  Summary       `json:"summary"`
+	Checks                   []CheckResult `json:"checks"`
+	PreparationScript        *PrepScript   `json:"preparation_script,omitempty"`
+	EstimatedIssuesPrevented []string      `json:"estimated_issues_prevented,omitempty"`
+	ConnectionError          string        `json:"connection_error,omitempty"`
+	Warnings                 []string      `json:"warnings,omitempty"`
 }
 
 // Summary of check results.
