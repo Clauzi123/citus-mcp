@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Unit tests for advisor scoring logic.
+
 package advisor
 
 import "testing"

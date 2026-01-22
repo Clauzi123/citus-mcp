@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Implements citus_job_inspector tool for background job monitoring.
+
 package tools
 
 import (

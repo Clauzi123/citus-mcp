@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// SQL query constants for Citus metadata operations.
+
 package dbsql
 
 const (

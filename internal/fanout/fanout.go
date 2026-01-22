@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Parallel query fanout to multiple worker nodes.
+
 package fanout
 
 import (

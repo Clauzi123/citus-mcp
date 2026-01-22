@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Implements citus_table_inspector tool for table metadata analysis.
+
 package tools
 
 import (

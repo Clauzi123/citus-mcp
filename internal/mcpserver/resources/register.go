@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// MCP resource registration for cluster metadata exposure.
+
 package resources
 
 import (

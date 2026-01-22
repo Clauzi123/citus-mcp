@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Configuration analysis rules for Citus and PostgreSQL GUCs.
+
 package guc
 
 import (

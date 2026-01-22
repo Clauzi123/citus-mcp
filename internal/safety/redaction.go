@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Sensitive data redaction for DSN and connection strings.
+
 package safety
 
 import (

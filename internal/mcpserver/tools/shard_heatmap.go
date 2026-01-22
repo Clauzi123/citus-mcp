@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Implements citus_shard_heatmap tool for hot shard detection.
+
 package tools
 
 import (

@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// MCP prompt templates for guided workflows (health check, rebalance, skew).
+
 package prompts
 
 import (

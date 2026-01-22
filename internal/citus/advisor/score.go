@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Scoring logic for advisor findings prioritization.
+
 package advisor
 
 // Severity to base score mapping.

@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Implements citus_request_approval_token for guarded operations.
+
 package tools
 
 import (

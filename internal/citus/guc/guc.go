@@ -1,3 +1,6 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
 // Package guc provides GUC (Grand Unified Configuration) definitions and analysis
 // for Citus and PostgreSQL configuration parameters.
 package guc

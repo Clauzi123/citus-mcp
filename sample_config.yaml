@@ -1,0 +1,54 @@
+# ===========================================
+# Citus MCP Server Configuration
+# ===========================================
+
+# Database Connection (REQUIRED)
+# -----------------------------
+coordinator_dsn: postgres://localhost:5432/reb?sslmode=disable
+#coordinator_dsn: postgres://user:password@localhost:5432/mydb?sslmode=disable
+
+# Optional: Override credentials from DSN
+# coordinator_user: myuser
+# coordinator_password: mypassword
+
+# Optional: Direct worker connections (comma-separated)
+# worker_dsns: postgres://user:pass@worker1:5432/db,postgres://user:pass@worker2:5432/db
+
+# Server Mode
+# -----------
+# read_only: Only inspection tools available (default, safest)
+# admin: All tools available including execute operations
+mode: read_only
+
+# Execute Operations (only if mode=admin)
+# ---------------------------------------
+allow_execute: false
+# approval_secret: your-secret-key  # Required if allow_execute=true
+
+# Performance Settings
+# --------------------
+cache_ttl_seconds: 5          # Cache duration for metadata queries
+enable_caching: true          # Set to false to disable caching
+max_rows: 200                 # Maximum rows returned per query
+max_text_bytes: 200000        # Maximum text size in responses
+
+# Timeouts
+# --------
+connect_timeout_seconds: 10   # Connection timeout
+statement_timeout_ms: 30000   # Query timeout (30 seconds)
+
+# Logging
+# -------
+log_level: info               # debug, info, warn, error
+
+# ---------------
+# stdio: Standard input/output (default, for VS Code/CLI integration)
+# sse: Server-Sent Events over HTTP (for remote/network access)
+# streamable: Streamable HTTP transport (for remote/network access)
+transport: sse
+
+# HTTP Settings (only used when transport is sse or streamable)
+# http_addr: 127.0.0.1        # Listen address (use 0.0.0.0 for all interfaces)
+# http_port: 8080             # Listen port
+# http_path: /mcp             # Endpoint path
+# sse_keepalive_seconds: 30   # SSE keepalive interval

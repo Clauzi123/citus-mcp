@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Snapshot source advisor for node scaling recommendations.
+
 package snapshotadvisor
 
 import (

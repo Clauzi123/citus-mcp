@@ -1,3 +1,6 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
 // Package nodeprep provides pre-flight checks for adding nodes to a Citus cluster.
 package nodeprep
 

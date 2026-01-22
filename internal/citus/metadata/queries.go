@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// SQL queries for metadata health checks.
+
 package metadata
 
 // SQL queries for metadata health checks.

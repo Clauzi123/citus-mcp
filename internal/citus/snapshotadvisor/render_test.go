@@ -1,3 +1,8 @@
+// citus-mcp: AI-powered MCP server for Citus distributed PostgreSQL
+// SPDX-License-Identifier: MIT
+//
+// Unit tests for snapshot advisor rendering.
+
 package snapshotadvisor
 
 import "testing"
