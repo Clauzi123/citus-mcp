@@ -16,6 +16,7 @@ import (
 	"citus-mcp/internal/db"
 	serr "citus-mcp/internal/errors"
 	"citus-mcp/internal/safety"
+	"citus-mcp/internal/version"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.uber.org/zap"
@@ -194,18 +195,30 @@ func Ping(ctx context.Context, deps Dependencies, input PingInput) (*mcp.CallToo
 type ServerInfoInput struct{}
 
 type ServerInfoOutput struct {
-	ReadOnly     bool            `json:"read_only"`
-	AllowExecute bool            `json:"allow_execute"`
-	Metadata     *citus.Metadata `json:"metadata,omitempty"`
+	Version      string              `json:"version"`
+	Commit       string              `json:"commit"`
+	BuildDate    string              `json:"build_date"`
+	ReadOnly     bool                `json:"read_only"`
+	AllowExecute bool                `json:"allow_execute"`
+	Metadata     *citus.Metadata     `json:"metadata,omitempty"`
 }
 
 func ServerInfo(ctx context.Context, deps Dependencies) (*mcp.CallToolResult, ServerInfoOutput, error) {
+	info := version.Info()
+	out := ServerInfoOutput{
+		Version:      info.Version,
+		Commit:       info.Commit,
+		BuildDate:    info.Date,
+		ReadOnly:     !deps.Config.AllowExecute,
+		AllowExecute: deps.Config.AllowExecute,
+	}
 	meta, err := citus.GetMetadata(ctx, deps.Pool)
 	if err != nil {
 		deps.Logger.Warn("server_info metadata failed", zap.Error(err))
-		return nil, ServerInfoOutput{ReadOnly: !deps.Config.AllowExecute, AllowExecute: deps.Config.AllowExecute}, nil
+		return nil, out, nil
 	}
-	return nil, ServerInfoOutput{ReadOnly: !deps.Config.AllowExecute, AllowExecute: deps.Config.AllowExecute, Metadata: meta}, nil
+	out.Metadata = meta
+	return nil, out, nil
 }
 
 // ListNodes tool

@@ -16,15 +16,13 @@ import (
 	"citus-mcp/internal/mcpserver/resources"
 	"citus-mcp/internal/mcpserver/tools"
 	"citus-mcp/internal/safety"
+	"citus-mcp/internal/version"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.uber.org/zap"
 )
 
-const (
-	serverName    = "citus-mcp"
-	serverVersion = "0.1.0"
-)
+const serverName = "citus-mcp"
 
 type Server struct {
 	cfg        config.Config
@@ -54,7 +52,7 @@ func New(cfg config.Config, logger *zap.Logger) (*Server, error) {
 	}
 	cacheInstance := cache.New()
 
-	impl := &mcp.Implementation{Name: serverName, Version: serverVersion}
+	impl := &mcp.Implementation{Name: serverName, Version: version.Version}
 	m := mcp.NewServer(impl, nil)
 	deps := tools.Dependencies{
 		Pool:          pool,

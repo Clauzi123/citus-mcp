@@ -17,14 +17,12 @@ import (
 	"citus-mcp/internal/config"
 	"citus-mcp/internal/logging"
 	"citus-mcp/internal/mcpserver"
+	"citus-mcp/internal/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.uber.org/zap"
 )
 
-const (
-	serverName    = "citus-mcp"
-	serverVersion = "0.1.0"
-)
+const serverName = "citus-mcp"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -61,7 +59,13 @@ func main() {
 
 func runStdio(ctx context.Context, srv *mcpserver.Server, logger *zap.Logger) {
 	transport := &mcp.StdioTransport{}
-	logger.Info("starting citus-mcp server (stdio)", zap.String("name", serverName), zap.String("version", serverVersion))
+	info := version.Info()
+	logger.Info("starting citus-mcp server (stdio)",
+		zap.String("name", serverName),
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("date", info.Date),
+	)
 	if err := srv.Run(ctx, transport); err != nil {
 		logger.Error("server exited with error", zap.Error(err))
 		os.Exit(1)
@@ -72,10 +76,13 @@ func runStdio(ctx context.Context, srv *mcpserver.Server, logger *zap.Logger) {
 func runSSE(ctx context.Context, srv *mcpserver.Server, cfg config.Config, logger *zap.Logger) {
 	addr := fmt.Sprintf("%s:%d", cfg.HTTPAddr, cfg.HTTPPort)
 	endpoint := cfg.HTTPPath
+	info := version.Info()
 
 	logger.Info("starting citus-mcp server (SSE)",
 		zap.String("name", serverName),
-		zap.String("version", serverVersion),
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("date", info.Date),
 		zap.String("addr", addr),
 		zap.String("endpoint", endpoint),
 	)
@@ -117,10 +124,13 @@ func runSSE(ctx context.Context, srv *mcpserver.Server, cfg config.Config, logge
 func runStreamable(ctx context.Context, srv *mcpserver.Server, cfg config.Config, logger *zap.Logger) {
 	addr := fmt.Sprintf("%s:%d", cfg.HTTPAddr, cfg.HTTPPort)
 	endpoint := cfg.HTTPPath
+	info := version.Info()
 
 	logger.Info("starting citus-mcp server (Streamable HTTP)",
 		zap.String("name", serverName),
-		zap.String("version", serverVersion),
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("date", info.Date),
 		zap.String("addr", addr),
 		zap.String("endpoint", endpoint),
 	)
