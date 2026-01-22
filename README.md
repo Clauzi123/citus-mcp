@@ -1,53 +1,66 @@
+<div align="center">
+
 # Citus MCP Server
 
-<p align="center">
-  <strong>An AI-powered MCP server for managing Citus distributed PostgreSQL clusters</strong>
-</p>
+**An AI-powered MCP server for managing Citus distributed PostgreSQL clusters**
 
-<p align="center">
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#features">Features</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#tools-reference">Tools</a> •
-  <a href="#usage-examples">Examples</a>
-</p>
+[![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Citus](https://img.shields.io/badge/Citus-12.x--14.x-336791?logo=postgresql)](https://www.citusdata.com)
+
+[Quick Start](#-quick-start) •
+[Features](#-features) •
+[Installation](#-installation) •
+[Configuration](#-configuration) •
+[Tools Reference](#-tools-reference) •
+[Examples](#-usage-examples)
+
+</div>
 
 ---
 
-## What is Citus MCP?
+## 📖 What is Citus MCP?
 
 Citus MCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that enables AI assistants like GitHub Copilot to interact with your Citus distributed PostgreSQL cluster. It provides:
 
-- **Read-only cluster inspection** — Safely explore your distributed tables, shards, and nodes
-- **Intelligent advisors** — Get recommendations for rebalancing, skew analysis, and operational health
-- **Guarded execute operations** — Perform dangerous operations only with explicit approval tokens
-- **Real-time monitoring** — View cluster activity, locks, background jobs, and more
+| Feature | Description |
+|---------|-------------|
+| 🔍 **Read-only Inspection** | Safely explore distributed tables, shards, nodes, and colocation groups |
+| 🤖 **Intelligent Advisors** | Get recommendations for rebalancing, skew analysis, configuration, and operational health |
+| 🛡️ **Guarded Operations** | Execute dangerous operations only with explicit approval tokens |
+| 📊 **Real-time Monitoring** | View cluster activity, locks, background jobs, and hot shards |
 
 ### How It Works
 
 ```
-┌─────────────────┐     MCP Protocol      ┌──────────────┐     SQL      ┌─────────────────┐
-│  GitHub Copilot │ ◄──────────────────► │  citus-mcp   │ ◄──────────► │ Citus Cluster   │
-│  (VS Code/CLI)  │      (stdio)          │   server     │              │  (Coordinator)  │
-└─────────────────┘                       └──────────────┘              └─────────────────┘
+┌─────────────────┐                       ┌──────────────┐                ┌─────────────────┐
+│  GitHub Copilot │     MCP Protocol      │  citus-mcp   │      SQL       │  Citus Cluster  │
+│  (VS Code/CLI)  │ ◄──────────────────► │    server    │ ◄────────────► │  (Coordinator)  │
+└─────────────────┘      stdio/SSE        └──────────────┘                └─────────────────┘
 ```
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Go 1.22+** (for building from source)
-- **Citus 14.x** cluster with coordinator access
+- **Go 1.23+** (for building from source)
+- **Citus 12.x–14.x** cluster with coordinator access
 - **GitHub Copilot** with MCP support (VS Code or CLI)
 
 ### 1. Build the Server
 
 ```bash
-git clone https://github.com/yourusername/citus-mcp.git
+git clone https://github.com/citusdata/citus-mcp.git
 cd citus-mcp
+make build
+# Binary created at ./bin/citus-mcp
+```
+
+Or using Go directly:
+
+```bash
 go build -o bin/citus-mcp ./cmd/citus-mcp
 ```
 
@@ -96,17 +109,19 @@ You should see a "pong" response confirming the connection works.
 
 ---
 
-## Features
+## ✨ Features
 
 ### 🔍 Cluster Inspection (Read-Only)
 
 | Tool | Description |
 |------|-------------|
-| `citus_cluster_summary` | Overview of coordinator, workers, table counts |
+| `citus_cluster_summary` | Overview of coordinator, workers, table counts, and configuration health |
 | `list_nodes` | List all coordinator and worker nodes |
 | `list_distributed_tables` | List distributed and reference tables |
+| `citus_list_distributed_tables` | Paginated list of distributed tables with filters |
+| `citus_list_reference_tables` | Paginated list of reference tables |
 | `list_shards` | List shards with placements and sizes |
-| `citus_table_inspector` | Deep dive into table metadata, indexes, stats |
+| `citus_table_inspector` | Deep dive into table metadata, indexes, and statistics |
 | `citus_colocation_inspector` | Analyze colocation groups and colocated tables |
 
 ### 📊 Monitoring & Analysis
@@ -125,6 +140,7 @@ You should see a "pong" response confirming the connection works.
 | Tool | Description |
 |------|-------------|
 | `citus_advisor` | SRE + performance advisor with actionable recommendations |
+| `citus_config_advisor` | Comprehensive Citus and PostgreSQL configuration analysis |
 | `citus_snapshot_source_advisor` | Recommend source node for snapshot-based scaling |
 | `citus_validate_rebalance_prereqs` | Check if table is ready for rebalancing |
 | `citus_metadata_health` | Detect metadata corruption and inconsistencies with fix suggestions |
@@ -136,21 +152,26 @@ You should see a "pong" response confirming the connection works.
 |------|-------------|
 | `citus_rebalance_plan` | Preview rebalance operations |
 | `citus_rebalance_execute` | Start cluster rebalance |
+| `citus_rebalance_status` | Monitor rebalance progress |
 | `citus_move_shard_plan` | Preview shard move |
 | `citus_move_shard_execute` | Move a shard to different node |
+| `citus_request_approval_token` | Request time-limited approval token |
 
 ---
 
-## Installation
+## 📦 Installation
 
 ### Option 1: Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/citus-mcp.git
+git clone https://github.com/citusdata/citus-mcp.git
 cd citus-mcp
 
-# Build the binary
+# Build using Make
+make build
+
+# Or build directly with Go
 go build -o bin/citus-mcp ./cmd/citus-mcp
 
 # (Optional) Install to your PATH
@@ -160,7 +181,7 @@ sudo cp bin/citus-mcp /usr/local/bin/
 ### Option 2: Go Install
 
 ```bash
-go install github.com/yourusername/citus-mcp/cmd/citus-mcp@latest
+go install github.com/citusdata/citus-mcp/cmd/citus-mcp@latest
 ```
 
 ### Verify Installation
@@ -171,7 +192,7 @@ citus-mcp --help
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 ### Connection String (DSN)
 
@@ -306,20 +327,20 @@ Supported formats: YAML, JSON, TOML
 
 ---
 
-## Transport Options
+## 🌐 Transport Options
 
 Citus MCP supports three transport modes for different deployment scenarios:
 
 ### 1. Stdio Transport (Default)
 
-Standard input/output transport - the server communicates via stdin/stdout. This is the default and is used for direct integration with VS Code and GitHub Copilot CLI.
+Standard input/output transport — the server communicates via stdin/stdout. This is the default and is used for direct integration with VS Code and GitHub Copilot CLI.
 
 ```bash
 # Default - stdio transport
-bin/citus-mcp --coordinator-dsn "postgres://..."
+bin/citus-mcp --coordinator_dsn "postgres://..."
 
 # Explicit
-bin/citus-mcp --transport stdio --coordinator-dsn "postgres://..."
+bin/citus-mcp --transport stdio --coordinator_dsn "postgres://..."
 ```
 
 **Use cases:**
@@ -333,7 +354,7 @@ HTTP-based transport using Server-Sent Events. The server runs as an HTTP daemon
 
 ```bash
 # Start server on HTTP with SSE
-bin/citus-mcp --transport sse --http-addr 0.0.0.0 --http-port 8080 --coordinator-dsn "postgres://..."
+bin/citus-mcp --transport sse --http_addr 0.0.0.0 --http_port 8080 --coordinator_dsn "postgres://..."
 
 # Or via environment variables
 export CITUS_MCP_TRANSPORT=sse
@@ -360,7 +381,7 @@ Modern HTTP transport with streaming support. Recommended for new deployments.
 
 ```bash
 # Start server with streamable HTTP transport
-bin/citus-mcp --transport streamable --http-addr 0.0.0.0 --http-port 8080 --coordinator-dsn "postgres://..."
+bin/citus-mcp --transport streamable --http_addr 0.0.0.0 --http_port 8080 --coordinator_dsn "postgres://..."
 ```
 
 **Endpoints:**
@@ -417,7 +438,7 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 
 ---
 
-## Setting Up with GitHub Copilot
+## 🔌 Setting Up with GitHub Copilot
 
 ### VS Code Setup
 
@@ -500,7 +521,7 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 
 ---
 
-## Usage Examples
+## 💡 Usage Examples
 
 ### Basic Cluster Inspection
 
@@ -562,8 +583,14 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 @citus-mcp Check metadata health with deep validation across nodes
 ```
 
+### Configuration Analysis
+
 ```
-@citus-mcp Run pre-flight checks for adding node at postgres://user:pass@newworker:5432/db
+@citus-mcp Analyze cluster configuration and recommend improvements
+```
+
+```
+@citus-mcp Run config advisor with focus on memory settings
 ```
 
 ### Colocation Analysis
@@ -576,9 +603,15 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 @citus-mcp Which tables are colocated with the orders table?
 ```
 
+### Node Addition
+
+```
+@citus-mcp Run pre-flight checks for adding node at postgres://user:pass@newworker:5432/db
+```
+
 ---
 
-## Tools Reference
+## 📚 Tools Reference
 
 ### Inspection Tools
 
@@ -589,8 +622,9 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 | `list_nodes` | `limit?`, `offset?` | Coordinator and workers |
 | `list_distributed_tables` | `limit?`, `offset?` | All distributed tables |
 | `list_shards` | `limit?`, `offset?` | Shards with placements |
-| `citus_cluster_summary` | `include_workers?`, `include_gucs?` | Full cluster overview |
+| `citus_cluster_summary` | `include_workers?`, `include_gucs?`, `include_config?` | Full cluster overview with config health |
 | `citus_list_distributed_tables` | `schema?`, `table_type?`, `limit?`, `cursor?` | Paginated table list |
+| `citus_list_reference_tables` | `schema?`, `limit?`, `cursor?` | Paginated reference table list |
 | `citus_table_inspector` | `table` (required), `include_shards?`, `include_indexes?` | Table deep dive |
 | `citus_colocation_inspector` | `colocation_id?`, `limit?` | Colocation groups |
 
@@ -609,26 +643,29 @@ For SSE/Streamable transports, configure your MCP client to connect via HTTP:
 
 | Tool | Parameters | Description |
 |------|------------|-------------|
-| `citus_advisor` | `focus?` (`skew`/`ops`), `max_tables?` | SRE advisor |
-| `citus_snapshot_source_advisor` | — | Node addition advice |
+| `citus_advisor` | `focus?` (`skew`/`ops`), `max_tables?`, `include_next_steps?`, `include_sql_fixes?` | SRE advisor |
+| `citus_config_advisor` | `include_all_gucs?`, `category?`, `severity_filter?`, `total_ram_gb?` | Configuration analysis |
+| `citus_snapshot_source_advisor` | `strategy?`, `max_candidates?`, `include_simulation?` | Node addition advice |
 | `citus_validate_rebalance_prereqs` | `table` (required) | Rebalance readiness |
-| `citus_metadata_health` | `level?` (`basic`/`thorough`/`deep`) | Metadata consistency checks |
-| `citus_node_prepare_advisor` | `target_dsn` (required) | Pre-flight node addition checks |
+| `citus_metadata_health` | `check_level?` (`basic`/`thorough`/`deep`), `include_fixes?` | Metadata consistency checks |
+| `citus_node_prepare_advisor` | `host` (required), `port?`, `database?`, `generate_script?` | Pre-flight node addition checks |
 
 ### Execute Tools (Require Approval)
 
 | Tool | Parameters | Description |
 |------|------------|-------------|
-| `citus_rebalance_plan` | `table?`, `strategy?` | Preview rebalance |
-| `citus_rebalance_execute` | `approval_token` (required) | Start rebalance |
+| `citus_rebalance_plan` | `table?`, `threshold?`, `max_shard_moves?`, `drain_only?` | Preview rebalance |
+| `citus_rebalance_execute` | `approval_token` (required), `table?`, `threshold?` | Start rebalance |
 | `citus_rebalance_status` | `verbose?`, `limit?`, `cursor?` | Rebalance progress |
-| `citus_move_shard_plan` | `shard_id`, `source_*`, `target_*` | Preview move |
-| `citus_move_shard_execute` | `approval_token`, `shard_id`, etc. | Execute move |
+| `citus_move_shard_plan` | `shard_id`, `source_host`, `source_port`, `target_host`, `target_port`, `colocated?` | Preview move |
+| `citus_move_shard_execute` | `approval_token` (required), `shard_id`, `source_*`, `target_*`, `colocated?`, `drop_method?` | Execute move |
 | `citus_request_approval_token` | `action` (required), `ttl_seconds?` | Get approval token |
+| `rebalance_table_plan` | `table` (required) | Legacy: plan table rebalance |
+| `rebalance_table_execute` | `table` (required), `approval_token` (required) | Legacy: execute table rebalance |
 
 ---
 
-## Built-in Prompts
+## 📋 Built-in Prompts
 
 Use these prompts in Copilot Chat for guided workflows:
 
@@ -641,7 +678,7 @@ Use these prompts in Copilot Chat for guided workflows:
 
 ---
 
-## Security
+## 🔐 Security
 
 ### Read-Only Mode (Default)
 
@@ -676,7 +713,7 @@ Tokens are time-limited and action-specific (HMAC-signed).
 
 ---
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Connection Issues
 
@@ -713,18 +750,27 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 
 ---
 
-## Development
+## 🛠️ Development
 
 ### Running Tests
 
 ```bash
 # Unit tests
-go test ./...
+make test
+
+# With verbose output
+go test -v ./...
 
 # Integration tests (requires Docker)
 make docker-up
 make integration
 make docker-down
+```
+
+### Linting
+
+```bash
+make lint
 ```
 
 ### Project Structure
@@ -734,25 +780,42 @@ citus-mcp/
 ├── cmd/citus-mcp/       # Main entry point
 ├── internal/
 │   ├── mcpserver/       # MCP server implementation
-│   │   ├── tools/       # Tool implementations
+│   │   ├── tools/       # Tool implementations (30+ tools)
 │   │   ├── prompts/     # Prompt templates
 │   │   └── resources/   # Static resources
-│   ├── db/              # Database layer
-│   ├── citus/           # Citus-specific logic
-│   ├── config/          # Configuration
-│   └── safety/          # Guardrails and approval
+│   ├── db/              # Database layer and worker management
+│   ├── citus/           # Citus-specific logic and queries
+│   │   ├── advisor/     # Advisor implementations
+│   │   └── guc/         # GUC (configuration) analysis
+│   ├── cache/           # Query result caching
+│   ├── config/          # Configuration management
+│   ├── errors/          # Error types and codes
+│   ├── fanout/          # Parallel query execution
+│   ├── logging/         # Structured logging
+│   └── safety/          # Guardrails and approval tokens
+├── docker/              # Docker Compose setup for testing
 ├── docs/                # Additional documentation
 └── tests/               # Integration tests
 ```
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## License
+## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#citus-mcp-server)**
+
+Made with ❤️ for the Citus community
+
+</div>
