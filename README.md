@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/logo.png" alt="citus-mcp logo" width="180"/>
+
 # Citus MCP Server
 
 **An AI-powered MCP server for managing Citus distributed PostgreSQL clusters**
